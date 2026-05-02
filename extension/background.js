@@ -1,6 +1,7 @@
 const DEFAULT_API_BASE = "http://localhost:3000";
 const STORAGE_KEY = "scrollCourtState";
 const SHORTS_URL_PREFIX = "https://www.youtube.com/shorts/";
+const activeShortsTabs = new Map();
 
 function getApiBase(state) {
   return (state.apiBase || DEFAULT_API_BASE).replace(/\/$/, "");
@@ -59,8 +60,57 @@ function postJson(url, payload) {
   );
 }
 
+function buildCloseReport(state) {
+  const watchedCount = Number(state.watchedCount || 0);
+  const quizCount = Number(state.quizCount || 0);
+  const correctQuizCount = Number(state.sessionCorrectQuizCount || 0);
+  const wrongQuizCount = Number(state.sessionWrongQuizCount || 0);
+  const accuracy = quizCount ? Math.round((correctQuizCount / quizCount) * 100) : 0;
+
+  return {
+    id: `real-${Date.now()}`,
+    date: new Date().toLocaleString(),
+    source: "tab-close",
+    shorts: watchedCount,
+    trials: quizCount,
+    recall: Number(state.wisdom || 50),
+    accuracy,
+    rank: Number(state.wisdom || 50) >= 70 ? "Stoic Swipe Survivor" : "Doomscroll Defendant",
+    topics: Array.isArray(state.sessionTopics) ? state.sessionTopics.slice(0, 5) : [],
+    verdict: `You closed the tab after ${watchedCount} Shorts. The court accepts this as a productivity event.`,
+    distractionPattern: watchedCount > 20
+      ? "Long session detected. Consider a shorter cap next time."
+      : "Short session detected. Closing the tab quickly is evidence in your favor.",
+    productivityAction: quizCount
+      ? `Review your ${accuracy}% quiz accuracy and do one offline task before reopening Shorts.`
+      : "Set a one-task intention before the next Shorts session.",
+    totalShorts: Number(state.totalWatchedCount || watchedCount),
+    totalTrials: Number(state.totalQuizCount || quizCount),
+    correctAnswers: Number(state.correctQuizCount || 0),
+    wrongAnswers: Number(state.wrongQuizCount || 0),
+    bestRecall: Number(state.wisdom || 50)
+  };
+}
+
+function openLandingReport(state) {
+  if (!state || Number(state.watchedCount || 0) <= 0) return;
+
+  const apiBase = getApiBase(state);
+  const report = buildCloseReport(state);
+  const encoded = encodeURIComponent(JSON.stringify(report));
+  chrome.tabs.create({ url: `${apiBase}/?scrollCourtReport=${encoded}#profile` });
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message) return false;
+
+  if (message.type === "SCROLL_COURT_REGISTER_SHORTS_TAB") {
+    if (sender?.tab?.id) {
+      activeShortsTabs.set(sender.tab.id, true);
+    }
+    sendResponse({ ok: true });
+    return false;
+  }
 
   if (message.type === "SCROLL_COURT_GENERATE_RECEIPT") {
     chrome.storage.local.get([STORAGE_KEY], (result) => {
@@ -111,4 +161,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   return false;
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  if (!activeShortsTabs.has(tabId)) return;
+  activeShortsTabs.delete(tabId);
+
+  chrome.storage.local.get([STORAGE_KEY], (result) => {
+    openLandingReport(result[STORAGE_KEY] || {});
+  });
 });

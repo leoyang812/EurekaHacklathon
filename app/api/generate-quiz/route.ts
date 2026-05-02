@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
+const QUIZ_ANSWER_COUNT = 5;
 
 type EvidenceItem = {
   videoId?: string;
@@ -108,7 +109,7 @@ function cleanEvidence(value: unknown): EvidenceItem | null {
     title: cleanString(item.title, 120),
     channel: cleanString(item.channel, 60),
     captions: cleanString(item.captions, 1500),
-    frameSummary: cleanString(item.frameSummary, 240),
+    frameSummary: cleanString(item.frameSummary, 700),
     frameTopics: Array.isArray(item.frameTopics)
       ? item.frameTopics.map((topic) => cleanString(topic, 28)).filter(Boolean).slice(0, 5)
       : [],
@@ -143,7 +144,7 @@ function parseQuizJson(raw: string): Quiz | null {
       .trim();
     const data = JSON.parse(cleaned) as Partial<Quiz>;
     if (typeof data.question !== "string" || !data.question.trim()) return null;
-    if (!Array.isArray(data.answers) || data.answers.length !== 4) return null;
+    if (!Array.isArray(data.answers) || data.answers.length !== QUIZ_ANSWER_COUNT) return null;
     const correctCount = data.answers.filter(
       (answer) => answer && typeof answer.text === "string" && answer.correct === true
     ).length;
@@ -214,22 +215,24 @@ export async function POST(request: Request) {
       model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
       response_format: { type: "json_object" },
       temperature: 0.7,
-      max_tokens: 460,
+      max_tokens: 700,
       messages: [
         {
           role: "system",
-          content: `You generate courtroom-style attention checks for Scroll Court, an anti-doomscrolling Chrome extension for YouTube Shorts.
+          content: `You are presented with pieces of evidence taken from the same Youtube Short. Propose a multiple-choice question designed to test a user who has watched the short whether they remember what they have watched.
 
 Evidence rules:
-- Captions are strongest and may support specific questions about what was said.
-- Frame summaries are secondary and only support cautious visible/topic questions.
-- Metadata is weakest and should only support general topic framing.
+- Use the evidence that best matches the Short's actual content, not whichever text field is longest.
+- Frame summaries are primary when they describe visible action or hard-coded on-screen subtitles/text from the video itself.
+- YouTube captions are useful only when they clearly match speech/content in the Short. If captions look like song lyrics, background music, ambience, or unrelated audio, do not base the quiz on them.
+- Metadata/title/channel are weakest and should only support general topic framing. Do not quiz mainly from the title when frameSummary or meaningful captions exist.
 - Never invent details that are not in the evidence.
-- If evidence is thin, ask only about what is directly supported by the title, topics, frame summary, or captions.
+- If evidence is thin, ask only about what is directly supported by visible frame summary/topics or meaningful captions.
 - Do not claim to understand the full video, transcript, audio, comments, or ending unless captions provide that text.
 - Make the question genuinely difficult but fair: someone who watched mindlessly should hesitate, someone who paid attention should know.
-- Ask about one specific, evidence-supported detail or distinction. Do not ask generic self-reflection questions.
-- The four answer choices must be distinct, plausible, and similar in length/detail.
+- Ask one specific question about the topic of the video. Do not ask questions that are too generic or too obscure.
+- Create exactly five answer choices.
+- The five answer choices must be distinct, plausible, and similar in length/detail.
 - Wrong choices should be believable near-misses, not obvious jokes, duplicates, or absurd throwaways.
 - Avoid repeating the same wording across choices.
 - Do not put the correct answer first every time; vary its position.
@@ -239,6 +242,7 @@ Return ONLY valid JSON with this exact structure:
   "question": "...",
   "answers": [
     { "text": "...", "correct": true },
+    { "text": "...", "correct": false },
     { "text": "...", "correct": false },
     { "text": "...", "correct": false },
     { "text": "...", "correct": false }

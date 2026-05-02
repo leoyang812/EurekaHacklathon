@@ -117,12 +117,12 @@ export async function POST(request: Request) {
       model: process.env.OPENAI_VISION_MODEL ?? "gpt-4o-mini",
       response_format: { type: "json_object" },
       temperature: 0.2,
-      max_tokens: 220,
+      max_tokens: 360,
       messages: [
         {
           role: "system",
           content:
-            "You analyze one visible screenshot frame from a YouTube Shorts page for a comedy anti-doomscrolling extension. Describe only what is visible in this single frame. Do not claim to understand the whole video. Use cautious wording like 'appears to show'. Focus on broad content categories/topics. Do not identify real people, usernames, creators, commenters, private details, or profile names. Return JSON only with summary, topics, and confidence."
+            "You analyze one visible screenshot frame from a YouTube Shorts page for a comedy anti-doomscrolling extension. Describe only what is visible in this single frame. Do not claim to understand the whole video. Use cautious wording like 'appears to show'. Prioritize the main visual action and any large hard-coded on-screen text/subtitles that are part of the video itself, such as TikTok/Reels captions. Ignore YouTube chrome, usernames, channel names, comments, buttons, and profile details. If visible subtitles appear to describe the actual content, include their gist in the summary. Return JSON only with summary, topics, and confidence."
         },
         {
           role: "user",

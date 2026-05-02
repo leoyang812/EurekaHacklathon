@@ -10,14 +10,11 @@
   const JUDGMENT_MIN_SHORTS = 4;
   const JUDGMENT_MAX_SHORTS = 5;
   const JUMPSCARE_SOUND = "assets/sound/lordsonny-cinematic-hit-159487.mp3";
+  const JUMPSCARE_DURATION_MS = 2000;
   const JUMPSCARE_IMAGES = [
-    "assets/Images/Screenshot 2026-05-02 051950.png",
-    "assets/Images/Screenshot 2026-05-02 051958.png",
-    "assets/Images/Screenshot 2026-05-02 052005.png",
-    "assets/Images/Screenshot 2026-05-02 052013.png",
-    "assets/Images/Screenshot 2026-05-02 052019.png",
-    "assets/Images/Screenshot 2026-05-02 052025.png",
-    "assets/Images/Screenshot 2026-05-02 055436.png"
+    "assets/Images/socrates-jumpscare.png",
+    "assets/Images/socrates-jumpscare2.png",
+    "assets/Images/socrates-jumpscare3.png"
   ];
 
   const QUOTES = [
@@ -184,8 +181,14 @@
     apiBase: "http://localhost:3000",
     demoPassword: "",
     watchedCount: 0,
+    totalWatchedCount: 0,
     wisdom: 50,
     quizCount: 0,
+    sessionCorrectQuizCount: 0,
+    sessionWrongQuizCount: 0,
+    totalQuizCount: 0,
+    correctQuizCount: 0,
+    wrongQuizCount: 0,
     lastShortUrl: "",
     lastQuizAt: 0,
     nextJudgmentAt: 0,
@@ -196,6 +199,7 @@
     lastPhilosopher: "",
     lastPhilosopherAsset: "",
     wrongStreak: 0,
+    caseFileOpen: true,
     sessionEnded: false
   };
 
@@ -327,6 +331,15 @@
     return location.hostname === "www.youtube.com" && location.pathname.startsWith("/shorts/");
   }
 
+  function registerShortsTabForCloseReport() {
+    if (!isShortsUrl()) return;
+    try {
+      chrome.runtime.sendMessage({ type: "SCROLL_COURT_REGISTER_SHORTS_TAB" }, () => {});
+    } catch {
+      // Close-report registration is opportunistic.
+    }
+  }
+
   function extractVideoId() {
     return location.pathname.split("/shorts/")[1]?.split(/[/?#]/)[0] || "";
   }
@@ -357,10 +370,10 @@
     });
   }
 
-  function triggerJumpscare(seed = state.watchedCount + state.quizCount) {
+  function triggerJumpscare() {
     document.getElementById("sc-jumpscare")?.remove();
 
-    const imagePath = pickItem(JUMPSCARE_IMAGES, seed) || JUMPSCARE_IMAGES[0];
+    const imagePath = JUMPSCARE_IMAGES[Math.floor(Math.random() * JUMPSCARE_IMAGES.length)];
     const scare = document.createElement("div");
     scare.id = "sc-jumpscare";
     scare.setAttribute("aria-hidden", "true");
@@ -378,11 +391,11 @@
 
     setTimeout(() => {
       scare.classList.add("sc-jumpscare-out");
-    }, 720);
+    }, JUMPSCARE_DURATION_MS - 260);
 
     setTimeout(() => {
       scare.remove();
-    }, 1050);
+    }, JUMPSCARE_DURATION_MS);
   }
 
   function getTopicsFromText(text) {
@@ -539,7 +552,6 @@
 
   function hasEvidenceForQuiz(item) {
     if (!item) return false;
-    if (item.evidenceStrength === "weak") return false;
     return Boolean(
       (item.captions || "").trim().length > 10 ||
       (item.frameSummary || "").trim().length > 8 ||
@@ -554,8 +566,9 @@
       return (
         state.enabled &&
         !state.sessionEnded &&
-        state.watchedCount > 0 &&
-        state.lastQuizAt !== state.watchedCount
+        state.watchedCount > 1 &&
+        state.lastQuizAt !== state.watchedCount &&
+        Boolean(selectEvidenceForJudgment())
       );
     }
 
@@ -661,8 +674,8 @@
   }
 
   function blockNavKeys(event) {
-    const scrollKeys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " ", "j", "k"];
-    if (!hasCourtOverlay() && Date.now() < judgePanelVisibleUntil && scrollKeys.includes(event.key)) {
+    const panelDismissKeys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", "j"];
+    if (!hasCourtOverlay() && Date.now() < judgePanelVisibleUntil && panelDismissKeys.includes(event.key)) {
       hideTemporaryJudgePanel();
     }
 
@@ -678,6 +691,7 @@
 
   function blockWheel(event) {
     if (panelRoot?.contains(event.target)) return;
+
     if (!hasCourtOverlay() && Date.now() < judgePanelVisibleUntil) {
       hideTemporaryJudgePanel();
     }
@@ -716,9 +730,14 @@
   }
 
   function showTemporaryJudgePanel(durationMs = 3600) {
-    judgePanelVisibleUntil = Date.now() + durationMs;
+    judgePanelVisibleUntil = Number.isFinite(durationMs) ? Date.now() + durationMs : Number.POSITIVE_INFINITY;
     judgePanelShouldPop = true;
     if (judgePanelTimer) clearTimeout(judgePanelTimer);
+    judgePanelTimer = null;
+    if (!Number.isFinite(durationMs)) {
+      render();
+      return;
+    }
     judgePanelTimer = setTimeout(() => {
       judgePanelVisibleUntil = 0;
       judgePanelTimer = null;
@@ -745,21 +764,12 @@
     render();
   }
 
-  async function markJudgmentReviewed() {
-    await storageSet({
-      lastQuizAt: FEEDBACK_TEST_EVERY_SHORT ? state.watchedCount : state.nextJudgmentAt
-    });
-    await scheduleNextJudgment();
-  }
-
-  async function dismissWeakEvidenceJudgment(overlay) {
-    await markJudgmentReviewed();
+  function dismissWeakEvidenceJudgment(overlay) {
     dismissOverlayWithoutEvaluation(overlay);
   }
 
-  async function dismissUnavailableQuizJudgment(overlay, evidence) {
-    await markJudgmentReviewed();
-    fillQuizUnavailableOverlay(overlay, evidence);
+  function dismissUnavailableQuizJudgment(overlay) {
+    dismissOverlayWithoutEvaluation(overlay);
   }
 
   function fillQuizUnavailableOverlay(overlay, evidence) {
@@ -874,6 +884,11 @@
         await storageSet({
           wisdom: nextRecallScore,
           quizCount: state.quizCount + 1,
+          sessionCorrectQuizCount: (state.sessionCorrectQuizCount || 0) + (answer.correct ? 1 : 0),
+          sessionWrongQuizCount: (state.sessionWrongQuizCount || 0) + (answer.correct ? 0 : 1),
+          totalQuizCount: (state.totalQuizCount || 0) + 1,
+          correctQuizCount: (state.correctQuizCount || 0) + (answer.correct ? 1 : 0),
+          wrongQuizCount: (state.wrongQuizCount || 0) + (answer.correct ? 0 : 1),
           lastQuizAt: FEEDBACK_TEST_EVERY_SHORT ? state.watchedCount : state.nextJudgmentAt,
           lastQuote: feedback?.text || state.lastQuote,
           lastPhilosopher: feedback?.philosopher || state.lastPhilosopher,
@@ -881,11 +896,11 @@
           wrongStreak: nextWrongStreak
         });
         await scheduleNextJudgment();
-        showTemporaryJudgePanel();
+        showTemporaryJudgePanel(Number.POSITIVE_INFINITY);
 
-        if (!answer.correct && nextWrongStreak === 3) {
+        if (!answer.correct && nextWrongStreak > 0 && nextWrongStreak % 3 === 0) {
           setTimeout(() => {
-            triggerJumpscare(state.watchedCount + state.quizCount + nextWrongStreak);
+            triggerJumpscare();
           }, 120);
         }
 
@@ -999,7 +1014,7 @@
       const selectedEvidence = pendingEvidence;
 
       if (!hasEvidenceForQuiz(selectedEvidence)) {
-        await dismissWeakEvidenceJudgment(overlay);
+        dismissWeakEvidenceJudgment(overlay);
         return;
       }
 
@@ -1021,14 +1036,15 @@
       } else if (
         response?.ok &&
         typeof response.data?.question === "string" &&
-        Array.isArray(response.data?.answers)
+        Array.isArray(response.data?.answers) &&
+        response.data.answers.length === 5
       ) {
         fillQuizInOverlay(overlay, response.data);
       } else {
-        await dismissUnavailableQuizJudgment(overlay, selectedEvidence);
+        dismissUnavailableQuizJudgment(overlay);
       }
     } catch {
-      await dismissUnavailableQuizJudgment(overlay, selectEvidenceForJudgment());
+      dismissUnavailableQuizJudgment(overlay);
     } finally {
       quizFetchInProgress = false;
     }
@@ -1049,6 +1065,7 @@
     const shouldPopJudgePanel = hasJudgeFeedback && judgePanelShouldPop;
     if (shouldPopJudgePanel) {
       judgePanelShouldPop = false;
+      setTimeout(render, 260);
     }
     const quote = state.lastQuote || QUOTES[state.watchedCount % QUOTES.length];
     const topics = (state.sessionTopics || []).length
@@ -1087,10 +1104,13 @@
           </div>
         </section>` : ""}
 
-        <aside class="sc-panel sc-panel-right" aria-label="Scroll Court case file">
+        <aside class="sc-panel sc-panel-right ${state.caseFileOpen === false ? "sc-case-file-closed" : ""}" aria-label="Scroll Court case file">
           <header class="sc-side-header">
-            <strong>Case File</strong>
-            <span>Session evidence</span>
+            <div>
+              <strong>Case File</strong>
+              <span>Session evidence</span>
+            </div>
+            <button class="sc-icon-button" id="sc-case-toggle" type="button" title="${state.caseFileOpen === false ? "Open case file" : "Collapse case file"}">${state.caseFileOpen === false ? "+" : "-"}</button>
           </header>
           <div class="sc-body">
             <div class="sc-recall-card">
@@ -1101,8 +1121,10 @@
               <p>${courtMood}</p>
             </div>
             <div class="sc-session-row">
-              <div><span>Shorts watched</span><strong>${state.watchedCount}</strong></div>
+              <div><span>Session Shorts</span><strong>${state.watchedCount}</strong></div>
+              <div><span>Total Shorts</span><strong>${state.totalWatchedCount || 0}</strong></div>
               <div><span>Trials survived</span><strong>${state.quizCount}</strong></div>
+              <div><span>Total Trials</span><strong>${state.totalQuizCount || 0}</strong></div>
             </div>
             <div class="sc-evidence-card sc-evidence-${evidenceMeta.value}">
               <div class="sc-evidence-row">
@@ -1114,6 +1136,7 @@
             <div class="sc-actions">
               <button class="sc-button" id="sc-end-session" type="button">End Session</button>
               <button class="sc-button sc-secondary" id="sc-reset" type="button">Reset</button>
+              <button class="sc-button sc-secondary" id="sc-reset-stats" type="button">Reset Stats</button>
             </div>
             <div class="sc-receipt" id="sc-receipt"></div>
           </div>
@@ -1126,6 +1149,11 @@
       render();
     });
 
+    panelRoot.querySelector("#sc-case-toggle")?.addEventListener("click", async () => {
+      await storageSet({ caseFileOpen: state.caseFileOpen === false });
+      render();
+    });
+
     panelRoot.querySelector("#sc-reset")?.addEventListener("click", async () => {
       activeVideoId = "";
       captionBuffer = [];
@@ -1134,6 +1162,8 @@
         watchedCount: 0,
         wisdom: 50,
         quizCount: 0,
+        sessionCorrectQuizCount: 0,
+        sessionWrongQuizCount: 0,
         lastQuizAt: 0,
         nextJudgmentAt: 0,
         recentEvidence: [],
@@ -1150,6 +1180,16 @@
       judgePanelTimer = null;
       judgePanelShouldPop = false;
       await scheduleNextJudgment();
+      render();
+    });
+
+    panelRoot.querySelector("#sc-reset-stats")?.addEventListener("click", async () => {
+      await storageSet({
+        totalWatchedCount: 0,
+        totalQuizCount: 0,
+        correctQuizCount: 0,
+        wrongQuizCount: 0
+      });
       render();
     });
 
@@ -1198,6 +1238,7 @@
 
     await storageSet({
       watchedCount: state.watchedCount + 1,
+      totalWatchedCount: (state.totalWatchedCount || 0) + 1,
       lastShortUrl: meta.url,
       lastQuote: getRandomQuote()
     });
@@ -1221,12 +1262,14 @@
 
   async function handleCurrentShort() {
     if (!state.enabled || state.sessionEnded || !isShortsUrl()) return;
+    registerShortsTabForCloseReport();
 
     const currentUrl = location.href.split("?")[0];
     const meta = extractVideoMeta();
     if (!meta.videoId || currentUrl === state.lastShortUrl) return;
 
     if (activeVideoId && activeVideoId !== meta.videoId) {
+      hideTemporaryJudgePanel();
       await flushCaptions(activeVideoId);
       captionBuffer = [];
     }
@@ -1286,6 +1329,8 @@
       lastPhilosopher: "",
       lastPhilosopherAsset: "",
       wrongStreak: 0,
+      sessionCorrectQuizCount: 0,
+      sessionWrongQuizCount: 0,
       sessionEnded: false
     };
     await storageSet(state);
@@ -1305,6 +1350,7 @@
     render();
     renderOverlay();
     handleCurrentShort();
+    registerShortsTabForCloseReport();
     watchUrlChanges();
     setInterval(collectCaptions, 1000);
     startScrollUnlockWatchdog();
