@@ -12,14 +12,14 @@ import { ProfileStatsPanel } from "./profile-stats";
 const steps = [
   "Load the extension folder in Chrome developer mode.",
   "Open a YouTube Shorts URL.",
-  "Watch the floating court panels track session and lifetime stats.",
+  "Watch the floating trial panels track session and lifetime stats.",
   "Answer attention checks to improve your Recall Score and unlock ranks."
 ];
 
 const features = [
   {
     icon: Gavel,
-    title: "Court Panels",
+    title: "Trial Panels",
     text: "Modern side panels sit beside the Shorts player with session evidence, recall score, and philosopher feedback."
   },
   {
@@ -41,32 +41,37 @@ const features = [
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
-      <section className="border-b border-slate-400/15 bg-[radial-gradient(circle_at_18%_0%,rgba(245,158,11,0.18),transparent_32%),linear-gradient(180deg,#121826,#080b13)]">
+    <main className="min-h-screen bg-[#030303] text-stone-100">
+      <section className="border-b border-amber-200/15 bg-[radial-gradient(circle_at_50%_0%,rgba(245,203,108,0.2),transparent_34%),linear-gradient(180deg,#080808,#030303)]">
         <div className="mx-auto grid min-h-[86vh] w-full max-w-6xl items-center gap-8 px-5 py-12 md:grid-cols-[1fr_410px] md:px-8">
           <div className="max-w-2xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-md border border-cyan-300/25 bg-cyan-300/10 px-3 py-2 text-sm font-bold text-cyan-100">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-md border border-amber-200/30 bg-amber-200/10 px-3 py-2 text-sm font-bold text-amber-100">
               <Gavel className="h-4 w-4" />
-              YouTube Shorts attention court
+              YouTube Shorts recall tribunal
             </div>
+            <img
+              alt="The Recall Trial logo"
+              className="mb-6 h-28 w-28 rounded-full border border-amber-200/25 object-cover shadow-2xl shadow-amber-200/10"
+              src="/logo.png"
+            />
             <h1 className="text-5xl font-black leading-[1.02] tracking-normal text-white sm:text-6xl">
-              Scroll Court
+              The Recall Trial
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">
+            <p className="mt-5 max-w-xl text-lg leading-8 text-stone-300">
               A Chrome extension that watches your Shorts habit, quizzes what
               you actually noticed, tracks lifetime stats, and lets philosophers
               judge the evidence.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-cyan-300 px-5 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-300/10 transition hover:brightness-105"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-amber-200 px-5 text-sm font-bold text-black shadow-lg shadow-amber-200/10 transition hover:brightness-105"
                 href="#install"
               >
                 <Chrome className="h-4 w-4" />
                 Load Extension
               </a>
               <a
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-400/20 bg-slate-950/70 px-5 text-sm font-bold text-slate-100 transition hover:border-cyan-300/40 hover:bg-slate-800"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-amber-100/20 bg-black/70 px-5 text-sm font-bold text-stone-100 transition hover:border-amber-200/40 hover:bg-stone-900"
                 href="#profile"
               >
                 <Sparkles className="h-4 w-4" />
@@ -75,19 +80,23 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-400/20 bg-slate-900/80 shadow-2xl shadow-black/40 backdrop-blur">
-            <div className="flex items-center justify-between border-b border-slate-400/15 px-4 py-3">
+          <div className="rounded-lg border border-amber-100/20 bg-[#11100d]/85 shadow-2xl shadow-black/50 backdrop-blur">
+            <div className="flex items-center justify-between border-b border-amber-100/15 px-4 py-3">
               <div>
-                <p className="text-sm font-bold text-cyan-200">Case File</p>
-                <p className="text-xs text-slate-400">Session evidence</p>
+                <p className="text-sm font-bold text-amber-100">Trial Record</p>
+                <p className="text-xs text-stone-400">Session evidence</p>
               </div>
-              <Gavel className="h-5 w-5 text-amber-300" />
+              <img
+                alt=""
+                className="h-10 w-10 rounded-full border border-amber-200/25 object-cover"
+                src="/logo.png"
+              />
             </div>
             <div className="grid gap-4 p-4">
-              <div className="rounded-lg border border-cyan-300/20 bg-slate-950/50 p-4 text-center">
-                <p className="text-xs font-bold uppercase text-cyan-200">Recall Score</p>
+              <div className="rounded-lg border border-amber-200/25 bg-black/45 p-4 text-center">
+                <p className="text-xs font-bold uppercase text-amber-100">Recall Score</p>
                 <p className="mt-1 text-5xl font-black text-white">78</p>
-                <p className="mt-1 text-sm font-bold text-slate-300">Cautiously hopeful</p>
+                <p className="mt-1 text-sm font-bold text-stone-300">Cautiously hopeful</p>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {[
@@ -96,13 +105,13 @@ export default function HomePage() {
                   ["Trials", "42"],
                   ["Rank", "Stoic"]
                 ].map(([label, value]) => (
-                  <div className="rounded-lg border border-slate-400/15 bg-white/[0.04] p-3" key={label}>
-                    <p className="text-xs text-slate-400">{label}</p>
+                  <div className="rounded-lg border border-amber-100/15 bg-white/[0.04] p-3" key={label}>
+                    <p className="text-xs text-stone-400">{label}</p>
                     <p className="mt-1 text-sm font-black text-white">{value}</p>
                   </div>
                 ))}
               </div>
-              <div className="rounded-lg border border-amber-300/20 bg-amber-300/10 p-4">
+              <div className="rounded-lg border border-amber-300/25 bg-amber-300/10 p-4">
                 <p className="text-xs font-bold uppercase text-amber-300">The judge whispers</p>
                 <p className="mt-2 text-sm leading-6 text-amber-100">
                   Socrates approves one moment of focus. The record is still under investigation.
@@ -113,16 +122,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-slate-950 py-14">
+      <section className="bg-[#030303] py-14">
         <div className="mx-auto grid w-full max-w-6xl gap-4 px-5 md:grid-cols-4 md:px-8">
           {features.map((feature) => (
             <article
-              className="rounded-lg border border-slate-400/15 bg-slate-900/80 p-5 shadow-xl shadow-black/20"
+              className="rounded-lg border border-amber-100/15 bg-[#11100d]/80 p-5 shadow-xl shadow-black/20"
               key={feature.title}
             >
-              <feature.icon className="h-6 w-6 text-cyan-200" />
+              <feature.icon className="h-6 w-6 text-amber-200" />
               <h2 className="mt-4 text-base font-black text-white">{feature.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-400">{feature.text}</p>
+              <p className="mt-2 text-sm leading-6 text-stone-400">{feature.text}</p>
             </article>
           ))}
         </div>
@@ -130,10 +139,10 @@ export default function HomePage() {
 
       <ProfileStatsPanel />
 
-      <section id="install" className="border-t border-slate-400/15 bg-slate-900 py-14">
+      <section id="install" className="border-t border-amber-100/15 bg-[#11100d] py-14">
         <div className="mx-auto grid w-full max-w-6xl gap-8 px-5 md:grid-cols-[360px_1fr] md:px-8">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-cyan-300/25 bg-cyan-300/10 px-3 py-2 text-sm font-bold text-cyan-100">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-amber-200/25 bg-amber-200/10 px-3 py-2 text-sm font-bold text-amber-100">
               <Chrome className="h-4 w-4" />
               Demo Setup
             </div>
@@ -147,17 +156,17 @@ export default function HomePage() {
                 className="flex gap-3 rounded-lg border border-slate-400/15 bg-slate-950/60 p-4"
                 key={step}
               >
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-cyan-300 text-sm font-black text-slate-950">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-amber-200 text-sm font-black text-black">
                   {index + 1}
                 </span>
-                <span className="text-sm leading-6 text-slate-300">{step}</span>
+                <span className="text-sm leading-6 text-stone-300">{step}</span>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      <section id="security" className="border-t border-slate-400/15 bg-slate-950 py-14">
+      <section id="security" className="border-t border-amber-100/15 bg-[#030303] py-14">
         <div className="mx-auto grid w-full max-w-6xl gap-8 px-5 md:grid-cols-[1fr_1fr] md:px-8">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-sm font-bold text-amber-100">

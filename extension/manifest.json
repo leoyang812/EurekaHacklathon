@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Scroll Court",
+  "name": "The Recall Trial",
   "version": "0.1.0",
-  "description": "Ancient philosophers judge your YouTube Shorts autopilot loop.",
+  "description": "A philosopher trial that tests what you actually recall from YouTube Shorts.",
   "permissions": ["storage", "activeTab", "tabs"],
   "host_permissions": [
     "https://www.youtube.com/*",
@@ -10,7 +10,7 @@
     "https://*.vercel.app/*"
   ],
   "action": {
-    "default_title": "Scroll Court",
+    "default_title": "The Recall Trial",
     "default_popup": "popup.html"
   },
   "background": {

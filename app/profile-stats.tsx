@@ -82,37 +82,37 @@ const reportsStorageKey = "scrollCourtLandingReports";
 const ranks = [
   {
     name: "Doomscroll Defendant",
-    minShorts: 0,
+    minCorrectAnswers: 0,
     reward: "Unlocked: Court-appointed side eye"
   },
   {
     name: "Apprentice Witness",
-    minShorts: 50,
+    minCorrectAnswers: 5,
     reward: "Unlocked: Bronze philosopher badge"
   },
   {
     name: "Stoic Swipe Survivor",
-    minShorts: 150,
+    minCorrectAnswers: 20,
     reward: "Unlocked: Cyan profile frame"
   },
   {
     name: "Oracle of Restraint",
-    minShorts: 300,
+    minCorrectAnswers: 50,
     reward: "Unlocked: Golden verdict receipt"
   },
   {
     name: "Supreme Court of Focus",
-    minShorts: 600,
+    minCorrectAnswers: 100,
     reward: "Unlocked: Socrates jumpscare immunity token"
   }
 ];
 
-function getRank(totalShorts: number) {
-  return [...ranks].reverse().find((rank) => totalShorts >= rank.minShorts) ?? ranks[0];
+function getRank(correctAnswers: number) {
+  return [...ranks].reverse().find((rank) => correctAnswers >= rank.minCorrectAnswers) ?? ranks[0];
 }
 
-function getNextRank(totalShorts: number) {
-  return ranks.find((rank) => totalShorts < rank.minShorts) ?? null;
+function getNextRank(correctAnswers: number) {
+  return ranks.find((rank) => correctAnswers < rank.minCorrectAnswers) ?? null;
 }
 
 function getRealReports(reports: SessionReport[]) {
@@ -309,13 +309,13 @@ export function ProfileStatsPanel() {
   }, [reports]);
 
   const displayStats = useMemo(() => getDisplayStats(stats, reports), [stats, reports]);
-  const rank = useMemo(() => getRank(displayStats.totalShorts), [displayStats.totalShorts]);
-  const nextRank = useMemo(() => getNextRank(displayStats.totalShorts), [displayStats.totalShorts]);
+  const rank = useMemo(() => getRank(displayStats.correctAnswers), [displayStats.correctAnswers]);
+  const nextRank = useMemo(() => getNextRank(displayStats.correctAnswers), [displayStats.correctAnswers]);
   const accuracy = displayStats.totalTrials
     ? Math.round((displayStats.correctAnswers / displayStats.totalTrials) * 100)
     : 0;
   const progress = nextRank
-    ? Math.min(100, Math.round((displayStats.totalShorts / nextRank.minShorts) * 100))
+    ? Math.min(100, Math.round((displayStats.correctAnswers / nextRank.minCorrectAnswers) * 100))
     : 100;
   const realReportCount = getRealReports(reports).length;
   const latestSessionNumber = realReportCount;
@@ -333,16 +333,16 @@ export function ProfileStatsPanel() {
   }
 
   return (
-    <section id="profile" className="border-t border-slate-700/40 bg-slate-950 py-14 text-slate-100">
+    <section id="profile" className="border-t border-amber-100/15 bg-[#030303] py-14 text-stone-100">
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-5 md:grid-cols-[1.05fr_0.95fr] md:px-8">
-        <div className="rounded-lg border border-slate-400/20 bg-slate-900/80 shadow-2xl shadow-black/40">
-          <div className="flex items-center justify-between border-b border-slate-400/15 px-5 py-4">
+        <div className="rounded-lg border border-amber-100/20 bg-[#11100d]/85 shadow-2xl shadow-black/50">
+          <div className="flex items-center justify-between border-b border-amber-100/15 px-5 py-4">
             <div>
-              <p className="text-sm font-bold text-cyan-200">Profile</p>
-              <h2 className="text-2xl font-black tracking-normal text-white">Scroll Court Record</h2>
+              <p className="text-sm font-bold text-amber-100">Profile</p>
+              <h2 className="text-2xl font-black tracking-normal text-white">Recall Trial Record</h2>
             </div>
             <button
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-400/20 bg-slate-950/70 px-3 text-sm font-bold text-slate-200 transition hover:border-cyan-300/40 hover:bg-slate-800"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-amber-100/20 bg-black/70 px-3 text-sm font-bold text-stone-200 transition hover:border-amber-200/40 hover:bg-stone-900"
               onClick={resetStats}
               type="button"
             >
@@ -352,46 +352,46 @@ export function ProfileStatsPanel() {
           </div>
 
           <div className="grid gap-4 p-5">
-            <div className="rounded-lg border border-cyan-300/20 bg-slate-950/50 p-5">
+            <div className="rounded-lg border border-amber-200/25 bg-black/45 p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold uppercase text-cyan-200">Current rank</p>
+                  <p className="text-xs font-bold uppercase text-amber-100">Current rank</p>
                   <h3 className="mt-1 text-3xl font-black text-white">{rank.name}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">{rank.reward}</p>
+                  <p className="mt-2 text-sm leading-6 text-stone-300">{rank.reward}</p>
                 </div>
                 <Trophy className="h-8 w-8 text-amber-300" />
               </div>
-              <div className="mt-5 h-2 rounded-full bg-slate-800">
+              <div className="mt-5 h-2 rounded-full bg-stone-900">
                 <div
-                  className="h-2 rounded-full bg-cyan-300"
+                  className="h-2 rounded-full bg-amber-200"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="mt-2 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-stone-400">
                 {nextRank
-                  ? `${nextRank.minShorts - displayStats.totalShorts} Shorts until ${nextRank.name}`
+                  ? `${nextRank.minCorrectAnswers - displayStats.correctAnswers} correct trial answers until ${nextRank.name}`
                   : "Maximum rank unlocked"}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               {[
+                ["Correct Answers", displayStats.correctAnswers],
                 ["Total Shorts", displayStats.totalShorts],
                 ["Trials", displayStats.totalTrials],
                 ["Accuracy", `${accuracy}%`],
                 ["Best Recall", `${displayStats.bestRecall}/100`],
-                ["Focus Streak", `${stats.streakDays} days`],
                 ["Reports", realReportCount || reports.length]
               ].map(([label, value]) => (
-                <div className="rounded-lg border border-slate-400/15 bg-white/[0.04] p-4" key={label}>
-                  <p className="text-xs text-slate-400">{label}</p>
+                <div className="rounded-lg border border-amber-100/15 bg-white/[0.04] p-4" key={label}>
+                  <p className="text-xs text-stone-400">{label}</p>
                   <p className="mt-1 text-2xl font-black text-white">{value}</p>
                 </div>
               ))}
             </div>
 
             <button
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-cyan-300 px-4 text-sm font-black text-slate-950 transition hover:brightness-105"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-amber-200 px-4 text-sm font-black text-black transition hover:brightness-105"
               onClick={() => setShowReports((current) => !current)}
               type="button"
             >
@@ -401,33 +401,33 @@ export function ProfileStatsPanel() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-400/20 bg-slate-900/80 p-5 shadow-2xl shadow-black/40">
-          <div className="mb-4 flex items-center gap-2 text-sm font-bold text-cyan-200">
+        <div className="rounded-lg border border-amber-100/20 bg-[#11100d]/85 p-5 shadow-2xl shadow-black/50">
+          <div className="mb-4 flex items-center gap-2 text-sm font-bold text-amber-100">
             <Award className="h-4 w-4" />
             Rewards Ladder
           </div>
           <div className="grid gap-3">
             {ranks.map((item) => {
-              const unlocked = stats.totalShorts >= item.minShorts;
+              const unlocked = displayStats.correctAnswers >= item.minCorrectAnswers;
               return (
                 <div
                   className={`rounded-lg border p-4 ${
                     unlocked
-                      ? "border-cyan-300/30 bg-cyan-300/10"
-                      : "border-slate-400/15 bg-white/[0.035]"
+                      ? "border-amber-200/30 bg-amber-200/10"
+                      : "border-amber-100/15 bg-white/[0.035]"
                   }`}
                   key={item.name}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <strong className="text-sm text-white">{item.name}</strong>
                     {unlocked ? (
-                      <ShieldCheck className="h-4 w-4 text-cyan-200" />
+                      <ShieldCheck className="h-4 w-4 text-amber-100" />
                     ) : (
-                      <Sparkles className="h-4 w-4 text-slate-500" />
+                      <Sparkles className="h-4 w-4 text-stone-500" />
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-slate-400">{item.minShorts}+ lifetime Shorts</p>
-                  <p className="mt-2 text-sm text-slate-300">{item.reward}</p>
+                  <p className="mt-1 text-xs text-stone-400">{item.minCorrectAnswers}+ correct trial answers</p>
+                  <p className="mt-2 text-sm text-stone-300">{item.reward}</p>
                 </div>
               );
             })}
@@ -440,7 +440,7 @@ export function ProfileStatsPanel() {
           <div className="rounded-lg border border-slate-400/20 bg-slate-900/80 shadow-2xl shadow-black/40">
             <div className="flex items-center justify-between border-b border-slate-400/15 px-5 py-4">
               <div>
-                <p className="text-sm font-bold text-cyan-200">My Past Reports</p>
+                <p className="text-sm font-bold text-amber-100">My Past Reports</p>
                 <h3 className="text-2xl font-black text-white">Receipt History</h3>
               </div>
               <div className="inline-flex items-center gap-2 rounded-md border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-sm font-bold text-amber-100">
@@ -462,7 +462,7 @@ export function ProfileStatsPanel() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-xs font-bold uppercase text-cyan-200">
+                        <p className="text-xs font-bold uppercase text-amber-100">
                           {report.source === "tab-close" && getDisplaySessionNumber(report, reports) === latestSessionNumber
                             ? `Your latest session (Session ${getDisplaySessionNumber(report, reports)})`
                             : report.source === "tab-close"
@@ -474,7 +474,7 @@ export function ProfileStatsPanel() {
                           <p className="mt-1 text-xs text-amber-200">Captured when YouTube tab closed</p>
                         ) : null}
                       </div>
-                      <span className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-xs font-bold text-cyan-100">
+                      <span className="rounded-md border border-amber-200/20 bg-amber-200/10 px-2 py-1 text-xs font-bold text-amber-100">
                         Recall {report.recall}/100
                       </span>
                     </div>

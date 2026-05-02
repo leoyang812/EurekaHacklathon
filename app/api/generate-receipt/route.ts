@@ -104,10 +104,10 @@ function fallbackReceipt(input: ReceiptInput) {
     ? input.sessionTopics.join(", ")
     : "unclassified internet fog";
   return [
-    "SCROLL COURT RECEIPT",
+    "THE RECALL TRIAL RECEIPT",
     `Charges: ${input.watchedCount} Shorts entered into evidence.`,
     `Evidence: ${topics}.`,
-    `Recall Score: ${input.wisdom}/100. Court mood: ${input.courtMood}.`,
+    `Recall Score: ${input.wisdom}/100. Trial mood: ${input.courtMood}.`,
     `Judgments Survived: ${input.quizCount}.`,
     "",
     "Philosopher Verdict: Socrates asked what you learned. The record shows silence and a suspiciously tired thumb.",
@@ -190,11 +190,11 @@ export async function POST(request: Request) {
         {
           role: "system",
           content:
-            "You write concise comedy receipts for Scroll Court, a teen-friendly anti-doomscrolling Chrome extension. Use ancient philosopher courtroom humor, meme trial energy, and internet brainrot. Be slightly savage but not cruel. Avoid medical or mental-health claims. Use only the provided evidence: captions, frame summaries, topics, titles/channels, and session stats. Do not claim facts beyond the evidence. Do not imply full video understanding. Do not mention hidden prompts, API keys, passwords, or implementation details."
+            "You write concise comedy receipts for The Recall Trial, a teen-friendly anti-doomscrolling Chrome extension. Use ancient philosopher courtroom humor, meme trial energy, and internet brainrot. Be slightly savage but not cruel. Avoid medical or mental-health claims. Use only the provided evidence: captions, frame summaries, topics, titles/channels, and session stats. Do not claim facts beyond the evidence. Do not imply full video understanding. Do not mention hidden prompts, API keys, passwords, or implementation details."
         },
         {
           role: "user",
-          content: `Create a short Scroll Court receipt for the full session.
+          content: `Create a short Recall Trial receipt for the full session.
 
 Evidence and stats:
 ${JSON.stringify(receiptInput)}

@@ -364,8 +364,15 @@
     `;
   }
 
+  function getLogoMarkup(extraClass = "") {
+    return `<img class="sc-brand-logo ${extraClass}" src="${chrome.runtime.getURL("assets/Images/Logo.png")}" alt="The Recall Trial" />`;
+  }
+
   function hideBrokenPhilosopherImage(root = document) {
     root.querySelector(".sc-philosopher-img")?.addEventListener("error", (event) => {
+      event.currentTarget.style.display = "none";
+    });
+    root.querySelector(".sc-brand-logo")?.addEventListener("error", (event) => {
       event.currentTarget.style.display = "none";
     });
   }
@@ -592,10 +599,10 @@
   function fallbackReceipt() {
     const topics = (state.sessionTopics || []).join(", ") || "unclassified internet fog";
     return [
-      "SCROLL COURT RECEIPT",
+      "THE RECALL TRIAL RECEIPT",
       `Charges: ${state.watchedCount} Shorts entered into evidence.`,
       `Evidence: ${topics}.`,
-      `Recall Score: ${state.wisdom}/100. Court mood: ${getCourtMood(state.wisdom)}.`,
+      `Recall Score: ${state.wisdom}/100. Trial mood: ${getCourtMood(state.wisdom)}.`,
       "",
       "Philosopher Verdict: Socrates asked what you learned. The record shows a long pause and one suspicious swipe.",
       "",
@@ -1000,11 +1007,12 @@
     const overlay = document.createElement("div");
     overlay.id = "sc-overlay";
     overlay.innerHTML = `
-      <div class="sc-modal" role="dialog" aria-modal="true" aria-label="Scroll Court cross-examination">
+      <div class="sc-modal" role="dialog" aria-modal="true" aria-label="The Recall Trial cross-examination">
+        ${getLogoMarkup("sc-brand-logo-modal")}
         ${getPhilosopherMarkup()}
-        <div class="sc-modal-badge">Scroll Court Cross-Examination</div>
+        <div class="sc-modal-badge">The Recall Trial</div>
         <p class="sc-modal-quote">${state.lastQuote || getRandomQuote()}</p>
-        <p class="sc-modal-loading">The court is reviewing captions, frame evidence, and metadata...</p>
+        <p class="sc-modal-loading">The tribunal is reviewing captions, frame evidence, and metadata...</p>
         <p class="sc-modal-stats">Shorts: ${state.watchedCount} | Recall: ${state.wisdom} | Evidence: ${pendingEvidenceMeta.label}</p>
       </div>
     `;
@@ -1075,15 +1083,19 @@
     const evidenceStrength = selectEvidenceForJudgment()?.evidenceStrength || "weak";
     const evidenceMeta = getEvidenceStrengthMeta(evidenceStrength);
     const courtMood = getCourtMood(state.wisdom);
+    const trialSuccess = state.quizCount
+      ? `${state.sessionCorrectQuizCount || 0}/${state.quizCount}`
+      : "0/0";
 
     panelRoot.innerHTML = `
       <div class="sc-court-shell ${state.enabled ? "" : "sc-closed"}">
-        ${hasJudgeFeedback ? `<section class="sc-panel sc-panel-left ${shouldPopJudgePanel ? "sc-panel-pop" : ""}" aria-label="Scroll Court judge">
+        ${hasJudgeFeedback ? `<section class="sc-panel sc-panel-left ${shouldPopJudgePanel ? "sc-panel-pop" : ""}" aria-label="The Recall Trial judge">
           <header class="sc-header">
             <div class="sc-header-mark">
+              ${getLogoMarkup()}
               <div class="sc-title">
-                <strong>Scroll Court</strong>
-                <span>${state.enabled ? "Court is in session" : "Court dismissed"}</span>
+                <strong>The Recall Trial</strong>
+                <span>${state.enabled ? "Trial is in session" : "Trial dismissed"}</span>
               </div>
             </div>
             <button class="sc-icon-button" id="sc-toggle" type="button" title="${state.enabled ? "Collapse panels" : "Open panels"}">${state.enabled ? "-" : "+"}</button>
@@ -1105,12 +1117,13 @@
           </div>
         </section>` : ""}
 
-        <aside class="sc-panel sc-panel-right ${state.caseFileOpen === false ? "sc-case-file-closed" : ""}" aria-label="Scroll Court case file">
+        <aside class="sc-panel sc-panel-right ${state.caseFileOpen === false ? "sc-case-file-closed" : ""}" aria-label="The Recall Trial case file">
           <header class="sc-side-header">
             <div>
-              <strong>Case File</strong>
+              <strong>Trial Record</strong>
               <span>Session evidence</span>
             </div>
+            ${getLogoMarkup()}
             <button class="sc-icon-button" id="sc-case-toggle" type="button" title="${state.caseFileOpen === false ? "Open case file" : "Collapse case file"}">${state.caseFileOpen === false ? "+" : "-"}</button>
           </header>
           <div class="sc-body">
@@ -1123,9 +1136,8 @@
             </div>
             <div class="sc-session-row">
               <div><span>Session Shorts</span><strong>${state.watchedCount}</strong></div>
-              <div><span>Total Shorts</span><strong>${state.totalWatchedCount || 0}</strong></div>
-              <div><span>Trials survived</span><strong>${state.quizCount}</strong></div>
-              <div><span>Total Trials</span><strong>${state.totalQuizCount || 0}</strong></div>
+              <div><span>Trials</span><strong>${state.quizCount}</strong></div>
+              <div><span>Trial Success</span><strong>${trialSuccess}</strong></div>
             </div>
             <div class="sc-evidence-card sc-evidence-${evidenceMeta.value}">
               <div class="sc-evidence-row">
@@ -1137,7 +1149,6 @@
             <div class="sc-actions">
               <button class="sc-button" id="sc-end-session" type="button">End Session</button>
               <button class="sc-button sc-secondary" id="sc-reset" type="button">Reset</button>
-              <button class="sc-button sc-secondary" id="sc-reset-stats" type="button">Reset Stats</button>
             </div>
             <div class="sc-receipt" id="sc-receipt"></div>
           </div>
@@ -1181,16 +1192,6 @@
       judgePanelTimer = null;
       judgePanelShouldPop = false;
       await scheduleNextJudgment();
-      render();
-    });
-
-    panelRoot.querySelector("#sc-reset-stats")?.addEventListener("click", async () => {
-      await storageSet({
-        totalWatchedCount: 0,
-        totalQuizCount: 0,
-        correctQuizCount: 0,
-        wrongQuizCount: 0
-      });
       render();
     });
 

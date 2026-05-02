@@ -5,8 +5,20 @@
   inset: 0;
   z-index: 2147483647;
   pointer-events: none;
-  color: #f9fafb;
+  color: #f8f3e7;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --sc-panel-edge: clamp(12px, 1.8vw, 28px);
+  --sc-video-half: min(28.125vh, 240px);
+  --sc-left-gap: clamp(20px, 3.2vw, 52px);
+  --sc-right-gap: clamp(84px, 8.5vw, 132px);
+  --sc-panel-width: min(
+    clamp(248px, 24vw, 340px),
+    calc(50vw - var(--sc-video-half) - var(--sc-right-gap) - var(--sc-panel-edge))
+  );
+  --sc-left-panel-width: min(
+    clamp(248px, 23vw, 320px),
+    calc(50vw - var(--sc-video-half) - var(--sc-left-gap) - var(--sc-panel-edge))
+  );
 }
 
 #scroll-court-root * {
@@ -17,23 +29,23 @@
 
 .sc-panel {
   position: fixed;
-  top: 86px;
-  width: 296px;
-  max-width: calc(50vw - 86px);
+  top: clamp(68px, 9vh, 86px);
+  width: max(224px, var(--sc-panel-width));
+  max-width: calc(50vw - var(--sc-panel-edge) - 14px);
   max-height: calc(100vh - 104px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   touch-action: pan-y;
   pointer-events: auto;
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  border: 1px solid rgba(245, 211, 122, 0.24);
   border-radius: 8px;
   background:
-    radial-gradient(circle at 18% 0%, rgba(245, 158, 11, 0.16), transparent 32%),
-    linear-gradient(180deg, rgba(18, 24, 38, 0.94), rgba(10, 14, 24, 0.96));
+    radial-gradient(circle at 50% 0%, rgba(245, 211, 122, 0.17), transparent 34%),
+    linear-gradient(180deg, rgba(20, 18, 13, 0.96), rgba(5, 5, 5, 0.97));
   box-shadow:
     0 22px 70px rgba(0, 0, 0, 0.46),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    inset 0 1px 0 rgba(255, 244, 214, 0.08);
   backdrop-filter: blur(18px) saturate(1.15);
   -webkit-backdrop-filter: blur(18px) saturate(1.15);
 }
@@ -46,7 +58,7 @@
 .sc-panel::-webkit-scrollbar-thumb,
 .sc-receipt::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.26);
+  background: rgba(245, 211, 122, 0.28);
 }
 
 .sc-panel::-webkit-scrollbar-track,
@@ -55,11 +67,18 @@
 }
 
 .sc-panel-left {
-  left: max(328px, calc(50vw - 520px));
+  left: max(
+    var(--sc-panel-edge),
+    calc(50vw - var(--sc-video-half) - var(--sc-left-gap) - max(224px, var(--sc-left-panel-width)))
+  );
+  width: max(224px, var(--sc-left-panel-width));
 }
 
 .sc-panel-right {
-  right: 96px;
+  right: max(
+    var(--sc-panel-edge),
+    calc(50vw - var(--sc-video-half) - var(--sc-right-gap) - max(224px, var(--sc-panel-width)))
+  );
 }
 
 .sc-panel-pop {
@@ -74,21 +93,6 @@
   to {
     opacity: 1;
     transform: translateX(0) scale(1);
-  }
-}
-
-@media (max-width: 1180px) {
-  .sc-panel {
-    width: 270px;
-    max-width: calc(50vw - 70px);
-  }
-
-  .sc-panel-left {
-    left: max(272px, calc(50vw - 492px));
-  }
-
-  .sc-panel-right {
-    right: 78px;
   }
 }
 
@@ -107,8 +111,8 @@
   justify-content: space-between;
   gap: 10px;
   padding: 14px 15px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(255, 255, 255, 0.025);
+  border-bottom: 1px solid rgba(245, 211, 122, 0.16);
+  background: rgba(255, 244, 214, 0.03);
 }
 
 .sc-side-header {
@@ -117,18 +121,18 @@
   justify-content: space-between;
   gap: 2px;
   padding: 14px 15px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(255, 255, 255, 0.025);
+  border-bottom: 1px solid rgba(245, 211, 122, 0.16);
+  background: rgba(255, 244, 214, 0.03);
 }
 
 .sc-side-header strong {
-  color: #f8fafc;
+  color: #fffaf0;
   font-size: 15px;
   letter-spacing: 0;
 }
 
 .sc-side-header span {
-  color: #94a3b8;
+  color: #c9bda5;
   font-size: 13px;
 }
 
@@ -139,11 +143,43 @@
   gap: 10px;
 }
 
+.sc-brand-logo {
+  display: block;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(245, 211, 122, 0.28);
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 4px rgba(245, 211, 122, 0.07);
+}
+
+.sc-side-header .sc-brand-logo {
+  margin-left: auto;
+}
+
+.sc-brand-logo-inline {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  margin-right: 7px;
+  vertical-align: middle;
+}
+
+.sc-brand-logo-modal {
+  width: 78px;
+  height: 78px;
+  justify-self: center;
+  box-shadow:
+    0 0 0 6px rgba(245, 211, 122, 0.1),
+    0 16px 34px rgba(0, 0, 0, 0.34);
+}
+
 .sc-panel .sc-philosopher {
   width: 42px;
   height: 42px;
   border-width: 1px;
-  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.08);
+  box-shadow: 0 0 0 4px rgba(245, 211, 122, 0.08);
 }
 
 .sc-judge-stage {
@@ -156,9 +192,9 @@
   width: 108px;
   height: 108px;
   border-width: 2px;
-  border-color: rgba(56, 189, 248, 0.48);
+  border-color: rgba(245, 211, 122, 0.58);
   box-shadow:
-    0 0 0 7px rgba(56, 189, 248, 0.1),
+    0 0 0 7px rgba(245, 211, 122, 0.12),
     0 18px 34px rgba(0, 0, 0, 0.38);
   animation: none;
 }
@@ -178,14 +214,14 @@
 }
 
 .sc-title strong {
-  color: #f8fafc;
+  color: #fffaf0;
   font-size: 16px;
   letter-spacing: 0;
 }
 
 .sc-title span,
 .sc-muted {
-  color: #94a3b8;
+  color: #c9bda5;
   font-size: 13px;
   margin: 0;
 }
@@ -204,15 +240,15 @@
   width: 30px;
   height: 30px;
   place-items: center;
-  color: #e2e8f0;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(15, 23, 42, 0.72);
+  color: #f8f3e7;
+  border: 1px solid rgba(245, 211, 122, 0.2);
+  background: rgba(12, 10, 7, 0.74);
   transition: background 0.14s, border-color 0.14s, transform 0.14s;
 }
 
 .sc-icon-button:hover {
-  border-color: rgba(56, 189, 248, 0.38);
-  background: rgba(30, 41, 59, 0.88);
+  border-color: rgba(245, 211, 122, 0.42);
+  background: rgba(36, 30, 18, 0.9);
   transform: translateY(-1px);
 }
 
@@ -226,16 +262,16 @@
   display: grid;
   justify-items: center;
   padding: 16px 12px;
-  border: 1px solid rgba(56, 189, 248, 0.24);
+  border: 1px solid rgba(245, 211, 122, 0.28);
   border-radius: 8px;
   background:
-    radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.18), transparent 58%),
-    rgba(15, 23, 42, 0.58);
+    radial-gradient(circle at 50% 0%, rgba(245, 211, 122, 0.2), transparent 58%),
+    rgba(0, 0, 0, 0.42);
   text-align: center;
 }
 
 .sc-wisdom-hero span {
-  color: #67e8f9;
+  color: #f5d37a;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -243,14 +279,14 @@
 
 .sc-wisdom-hero strong {
   margin-top: 2px;
-  color: #f8fafc;
+  color: #fffaf0;
   font-size: 44px;
   line-height: 1;
 }
 
 .sc-wisdom-hero p {
   margin: 5px 0 0;
-  color: #cbd5e1;
+  color: #e9dfc9;
   font-size: 14px;
   font-weight: 700;
 }
@@ -261,14 +297,14 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px;
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(245, 211, 122, 0.24);
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.54);
+  background: rgba(0, 0, 0, 0.42);
 }
 
 .sc-recall-card span {
   display: block;
-  color: #67e8f9;
+  color: #f5d37a;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
@@ -277,7 +313,7 @@
 .sc-recall-card strong {
   display: block;
   margin-top: 3px;
-  color: #f8fafc;
+  color: #fffaf0;
   font-size: 24px;
   line-height: 1;
 }
@@ -285,7 +321,7 @@
 .sc-recall-card p {
   margin: 0;
   max-width: 110px;
-  color: #cbd5e1;
+  color: #e9dfc9;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.25;
@@ -294,21 +330,21 @@
 
 .sc-session-row {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
 .sc-session-row div {
   min-width: 0;
   padding: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(245, 211, 122, 0.14);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.045);
+  background: rgba(255, 244, 214, 0.045);
 }
 
 .sc-session-row span {
   display: block;
-  color: #94a3b8;
+  color: #c9bda5;
   font-size: 12px;
 }
 
@@ -325,13 +361,13 @@
   display: grid;
   gap: 5px;
   padding: 12px;
-  border: 1px solid rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 211, 122, 0.22);
   border-radius: 8px;
-  background: rgba(245, 158, 11, 0.08);
+  background: rgba(245, 211, 122, 0.08);
 }
 
 .sc-quote span {
-  color: #fbbf24;
+  color: #f5d37a;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
@@ -339,7 +375,7 @@
 
 .sc-quote p {
   margin: 0;
-  color: #fde68a;
+  color: #fff0b8;
   font-size: 15px;
   line-height: 1.35;
   font-style: italic;
@@ -349,9 +385,9 @@
   display: grid;
   gap: 6px;
   padding: 11px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(245, 211, 122, 0.16);
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.46);
+  background: rgba(0, 0, 0, 0.38);
 }
 
 .sc-evidence-row {
@@ -362,7 +398,7 @@
 }
 
 .sc-evidence-row span {
-  color: #94a3b8;
+  color: #c9bda5;
   font-size: 11px;
 }
 
@@ -373,14 +409,14 @@
 
 .sc-evidence-card p {
   margin: 0;
-  color: #94a3b8;
+  color: #c9bda5;
   font-size: 12px;
   line-height: 1.35;
 }
 
 .sc-panel-line {
   margin: 0;
-  color: #e2e8f0;
+  color: #f8f3e7;
   font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
@@ -422,10 +458,10 @@
   flex: 1;
   min-height: 38px;
   padding: 9px 10px;
-  color: #06111f;
+  color: #050505;
   font-weight: 700;
-  background: linear-gradient(180deg, #67e8f9, #22d3ee);
-  box-shadow: 0 10px 22px rgba(34, 211, 238, 0.16);
+  background: linear-gradient(180deg, #fff0b8, #d5a63f);
+  box-shadow: 0 10px 22px rgba(245, 211, 122, 0.18);
   transition: filter 0.14s, transform 0.14s;
 }
 
@@ -435,9 +471,9 @@
 }
 
 .sc-button.sc-secondary {
-  color: #e2e8f0;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(15, 23, 42, 0.74);
+  color: #f8f3e7;
+  border: 1px solid rgba(245, 211, 122, 0.2);
+  background: rgba(12, 10, 7, 0.74);
   box-shadow: none;
 }
 
@@ -448,10 +484,10 @@
   overflow-y: auto;
   padding: 12px;
   padding-bottom: 18px;
-  border: 1px solid rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 211, 122, 0.18);
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.58);
-  color: #fde68a;
+  background: rgba(0, 0, 0, 0.46);
+  color: #fff0b8;
   font-size: 13px;
   line-height: 1.42;
 }
@@ -461,7 +497,57 @@
 }
 
 .sc-icon-button:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(245, 211, 122, 0.18);
+}
+
+@media (max-width: 1180px) and (min-width: 901px) {
+  #scroll-court-root {
+    --sc-panel-edge: 10px;
+    --sc-left-gap: clamp(14px, 2.2vw, 30px);
+    --sc-right-gap: clamp(72px, 7vw, 96px);
+    --sc-panel-width: min(
+      clamp(224px, 22vw, 280px),
+      calc(50vw - var(--sc-video-half) - var(--sc-right-gap) - var(--sc-panel-edge))
+    );
+    --sc-left-panel-width: min(
+      clamp(224px, 21vw, 270px),
+      calc(50vw - var(--sc-video-half) - var(--sc-left-gap) - var(--sc-panel-edge))
+    );
+  }
+
+  .sc-header,
+  .sc-side-header,
+  .sc-body {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .sc-panel .sc-philosopher-judge {
+    width: 92px;
+    height: 92px;
+  }
+
+  .sc-wisdom-hero strong {
+    font-size: 38px;
+  }
+
+  .sc-recall-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sc-recall-card p {
+    max-width: none;
+    text-align: left;
+  }
+
+  .sc-session-row {
+    grid-template-columns: 1fr;
+  }
+
+  .sc-actions {
+    flex-wrap: wrap;
+  }
 }
 
 /* ─── Blocking quiz overlay ──────────────────────────────── */
@@ -473,7 +559,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.84);
+  background: rgba(0, 0, 0, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -564,13 +650,13 @@
   max-width: 440px;
   width: calc(100% - 32px);
   padding: 28px 24px;
-  border: 1px solid rgba(245, 158, 11, 0.5);
+  border: 1px solid rgba(245, 211, 122, 0.5);
   border-radius: 14px;
-  background: rgba(17, 24, 39, 0.97);
+  background: rgba(8, 7, 5, 0.97);
   display: grid;
   gap: 16px;
   text-align: center;
-  color: #f9fafb;
+  color: #f8f3e7;
   box-sizing: border-box;
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
   animation: sc-slide-up 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -584,10 +670,10 @@
   place-items: center;
   justify-self: center;
   overflow: hidden;
-  border: 2px solid rgba(245, 158, 11, 0.55);
+  border: 2px solid rgba(245, 211, 122, 0.6);
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 25%, #fde68a, #4b5563 58%, #111827);
-  box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.08);
+  background: radial-gradient(circle at 35% 25%, #fff0b8, #6f613d 58%, #050505);
+  box-shadow: 0 0 0 6px rgba(245, 211, 122, 0.1);
   animation: sc-witness-pop 0.3s ease;
 }
 

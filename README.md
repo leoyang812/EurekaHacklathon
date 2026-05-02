@@ -1,6 +1,6 @@
-# Scroll Court
+# The Recall Trial
 
-Scroll Court is a Chrome extension and landing site for interrupting YouTube Shorts doomscrolling with comedy, attention checks, Recall Score changes, and a final philosopher roast receipt.
+The Recall Trial is a Chrome extension and landing site for interrupting YouTube Shorts doomscrolling with comedy, attention checks, Recall Score changes, and a final philosopher roast receipt.
 
 ## Local Setup
 
@@ -35,7 +35,7 @@ npm run dev
 4. Select the `extension` folder.
 5. Open `https://www.youtube.com/shorts/*`.
 
-The extension injects a floating Scroll Court panel directly into YouTube Shorts. Court summons are intentionally randomized, so the UI does not reveal the next interruption count. Use **End Session** to generate the final receipt.
+The extension injects floating Recall Trial panels directly into YouTube Shorts. Trial summons are intentionally randomized, so the UI does not reveal the next interruption count. Use **End Session** to generate the final receipt.
 
 ## Security Notes
 
