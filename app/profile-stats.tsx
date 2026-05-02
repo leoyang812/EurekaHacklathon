@@ -478,12 +478,23 @@ export function ProfileStatsPanel() {
   }
 
   return (
-    <section id="profile" className="border-t border-amber-100/15 bg-[#030303] py-14 text-stone-100">
-      <div className="mx-auto grid w-full max-w-6xl gap-6 px-5 md:grid-cols-[1.05fr_0.95fr] md:px-8">
-        <div className="rounded-lg border border-amber-100/20 bg-[#11100d]/85 shadow-2xl shadow-black/50">
-          <div className="flex items-center justify-between border-b border-amber-100/15 px-5 py-4">
+    <section id="profile" className="relative overflow-hidden border-t border-amber-100/15 bg-[#070605] py-16 text-stone-100">
+      <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgba(245,211,122,0.08),transparent)]" />
+      <div className="absolute bottom-12 left-6 hidden -rotate-6 border-4 border-red-900/20 px-8 py-3 font-serif text-3xl font-black uppercase tracking-[0.18em] text-red-900/20 md:block">
+        Entered
+      </div>
+      <div className="relative mx-auto mb-8 w-full max-w-6xl px-5 md:px-8">
+        <p className="text-sm font-black uppercase tracking-[0.22em] text-amber-100">Profile ledger</p>
+        <h2 className="mt-2 max-w-3xl text-4xl font-black tracking-normal text-white">
+          Your scrolling record, separated into stats, rewards, and receipts.
+        </h2>
+      </div>
+
+      <div className="relative mx-auto grid w-full max-w-6xl gap-6 px-5 md:grid-cols-[1.08fr_0.92fr] md:px-8">
+        <div className="overflow-hidden rounded-lg border border-amber-100/20 bg-[linear-gradient(180deg,#181309,#080706)] shadow-2xl shadow-black/50">
+          <div className="flex items-center justify-between border-b border-amber-100/15 bg-black/25 px-5 py-4">
             <div>
-              <p className="text-sm font-bold text-amber-100">Profile</p>
+              <p className="text-sm font-bold text-amber-100">Court ledger</p>
               <h2 className="text-2xl font-black tracking-normal text-white">Recall Trial Record</h2>
             </div>
             <button
@@ -496,30 +507,31 @@ export function ProfileStatsPanel() {
             </button>
           </div>
 
-          <div className="grid gap-4 p-5">
-            <div className="rounded-lg border border-amber-200/25 bg-black/45 p-5">
+          <div className="grid gap-5 p-5">
+            <div className="relative overflow-hidden rounded-lg border border-amber-200/30 bg-[#f3e5bc] p-5 text-[#1b1711] shadow-xl shadow-black/30">
+              <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full border border-red-900/10" />
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold uppercase text-amber-100">Current rank</p>
-                  <h3 className="mt-1 text-3xl font-black text-white">{rank.name}</h3>
-                  <p className="mt-2 text-sm leading-6 text-stone-300">{rank.reward}</p>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-red-900">Current rank</p>
+                  <h3 className="mt-1 text-3xl font-black text-[#120f0b]">{rank.name}</h3>
+                  <p className="mt-2 text-sm leading-6 text-stone-700">{rank.reward}</p>
                 </div>
-                <Trophy className="h-8 w-8 text-amber-300" />
+                <Trophy className="h-8 w-8 text-red-900" />
               </div>
-              <div className="mt-5 h-2 rounded-full bg-stone-900">
+              <div className="mt-5 h-2 rounded-full bg-stone-300">
                 <div
-                  className="h-2 rounded-full bg-amber-200"
+                  className="h-2 rounded-full bg-[#7f1d1d]"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="mt-2 text-xs text-stone-400">
+              <p className="mt-2 text-xs font-bold text-stone-600">
                 {nextRank
                   ? `${nextRank.minCorrectAnswers - displayStats.correctAnswers} correct trial answers until ${nextRank.name}`
                   : "Maximum rank unlocked"}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
               {[
                 ["Correct Answers", displayStats.correctAnswers],
                 ["Total Shorts", displayStats.totalShorts],
@@ -528,7 +540,7 @@ export function ProfileStatsPanel() {
                 ["Best Recall", `${displayStats.bestRecall}/100`],
                 ["Reports", realReportCount || reports.length]
               ].map(([label, value]) => (
-                <div className="rounded-lg border border-amber-100/15 bg-white/[0.04] p-4" key={label}>
+                <div className="rounded-lg border border-stone-500/15 bg-black/35 p-4 shadow-inner shadow-white/[0.02]" key={label}>
                   <p className="text-xs text-stone-400">{label}</p>
                   <p className="mt-1 text-2xl font-black text-white">{value}</p>
                 </div>
@@ -546,8 +558,8 @@ export function ProfileStatsPanel() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-amber-100/20 bg-[#11100d]/85 p-5 shadow-2xl shadow-black/50">
-          <div className="mb-4 flex items-center gap-2 text-sm font-bold text-amber-100">
+        <div className="rounded-lg border border-teal-100/20 bg-[linear-gradient(180deg,#061918,#050606)] p-5 shadow-2xl shadow-black/50">
+          <div className="mb-4 flex items-center gap-2 text-sm font-bold text-teal-100">
             <Award className="h-4 w-4" />
             Rewards Ladder
           </div>
@@ -558,8 +570,8 @@ export function ProfileStatsPanel() {
                 <div
                   className={`rounded-lg border p-4 ${
                     unlocked
-                      ? "border-amber-200/30 bg-amber-200/10"
-                      : "border-amber-100/15 bg-white/[0.035]"
+                      ? "border-teal-200/30 bg-teal-300/10"
+                      : "border-stone-400/15 bg-white/[0.035]"
                   }`}
                   key={item.name}
                 >
@@ -581,9 +593,9 @@ export function ProfileStatsPanel() {
       </div>
 
       {showReports ? (
-        <div id="reports" className="mx-auto mt-6 w-full max-w-6xl scroll-mt-6 px-5 md:px-8">
-          <div className="rounded-lg border border-slate-400/20 bg-slate-900/80 shadow-2xl shadow-black/40">
-            <div className="flex items-center justify-between border-b border-slate-400/15 px-5 py-4">
+        <div id="reports" className="relative mx-auto mt-10 w-full max-w-6xl scroll-mt-6 px-5 md:px-8">
+          <div className="overflow-hidden rounded-lg border border-stone-800 bg-[#efe5cf] text-[#17130b] shadow-2xl shadow-black/40">
+            <div className="flex items-center justify-between border-b-2 border-stone-800 bg-[#17130b] px-5 py-4 text-stone-100">
               <div>
                 <p className="text-sm font-bold text-amber-100">My Past Reports</p>
                 <h3 className="text-2xl font-black text-white">Receipt History</h3>
@@ -593,15 +605,15 @@ export function ProfileStatsPanel() {
                 {stats.streakDays}-day streak
               </div>
             </div>
-            <div className="grid gap-4 p-5">
-              <p className="max-w-3xl text-sm leading-6 text-slate-300">
-                Productivity receipts should include the session size, quiz accuracy,
-                topic counts, quiz accuracy, distraction patterns, weakest evidence source,
-                and a court sentence. That turns the roast into a usable awareness loop.
+            <div className="grid gap-5 p-5">
+              <p className="max-w-3xl border-l-4 border-red-900/60 pl-4 text-sm leading-6 text-stone-700">
+                Productivity receipts should include session size, recall, topic counts,
+                distraction patterns, weakest evidence source, and a court sentence.
+                That turns the roast into a usable awareness loop.
               </p>
               {latestReport ? (
-                <article className="overflow-hidden rounded-lg border border-amber-200/30 bg-[radial-gradient(circle_at_50%_0%,rgba(245,211,122,0.18),transparent_34%),linear-gradient(180deg,#16120a,#050505)] shadow-2xl shadow-black/40">
-                  <div className="border-b border-amber-200/20 px-5 py-4">
+                <article className="overflow-hidden rounded-lg border-2 border-[#17130b] bg-[linear-gradient(180deg,#fff8e6,#e9d7ad)] shadow-xl shadow-stone-900/20">
+                  <div className="border-b-2 border-[#17130b] bg-[#2a2012] px-5 py-4 text-stone-100">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <p className="text-xs font-black uppercase tracking-[0.22em] text-amber-100">
@@ -624,41 +636,41 @@ export function ProfileStatsPanel() {
                           ["Trials", latestReport.trials],
                           ["Accuracy", latestReport.accuracy ? `${latestReport.accuracy}%` : "N/A"]
                         ].map(([label, value]) => (
-                          <div className="rounded-lg border border-amber-100/15 bg-white/[0.045] p-3" key={label}>
-                            <p className="text-xs text-stone-400">{label}</p>
-                            <p className="mt-1 text-xl font-black text-white">{value}</p>
+                          <div className="rounded-lg border border-stone-900/15 bg-white/55 p-3" key={label}>
+                            <p className="text-xs text-stone-500">{label}</p>
+                            <p className="mt-1 text-xl font-black text-[#17130b]">{value}</p>
                           </div>
                         ))}
                       </div>
-                      <div className="rounded-lg border border-amber-200/20 bg-amber-200/10 p-4">
-                        <p className="text-xs font-black uppercase text-amber-100">Evidence</p>
-                        <p className="mt-2 text-sm leading-6 text-stone-200">
+                      <div className="rounded-lg border border-red-900/20 bg-red-900/10 p-4">
+                        <p className="text-xs font-black uppercase text-red-900">Evidence</p>
+                        <p className="mt-2 text-sm leading-6 text-stone-800">
                           {formatTopicCounts(latestReport)}
                         </p>
                       </div>
-                      <div className="rounded-lg border border-stone-500/20 bg-black/35 p-4">
-                        <p className="text-xs font-black uppercase text-amber-100">Receipt stats</p>
+                      <div className="rounded-lg border border-stone-900/20 bg-white/45 p-4">
+                        <p className="text-xs font-black uppercase text-red-900">Receipt stats</p>
                         <div className="mt-3 grid grid-cols-2 gap-2">
                           {getReceiptStatRows(latestReport).map(([label, value]) => (
-                            <div className="rounded-md bg-white/[0.04] p-3" key={label}>
-                              <p className="text-xs text-stone-400">{label}</p>
-                              <p className="mt-1 text-sm font-black text-white">{value}</p>
+                            <div className="rounded-md bg-[#17130b]/5 p-3" key={label}>
+                              <p className="text-xs text-stone-500">{label}</p>
+                              <p className="mt-1 text-sm font-black text-[#17130b]">{value}</p>
                             </div>
                           ))}
                         </div>
                       </div>
                     </div>
                     <div className="grid gap-4">
-                      <p className="text-xl font-black leading-8 text-amber-100">{getReportVerdict(latestReport)}</p>
-                      <p className="text-sm leading-6 text-stone-300">
-                        <strong className="text-white">Pattern:</strong> {getReportPattern(latestReport)}
+                      <p className="text-xl font-black leading-8 text-red-950">{getReportVerdict(latestReport)}</p>
+                      <p className="text-sm leading-6 text-stone-800">
+                        <strong className="text-[#17130b]">Pattern:</strong> {getReportPattern(latestReport)}
                       </p>
-                      <p className="text-sm leading-6 text-stone-300">
-                        <strong className="text-white">Court sentence:</strong> {getReportAction(latestReport)}
+                      <p className="text-sm leading-6 text-stone-800">
+                        <strong className="text-[#17130b]">Court sentence:</strong> {getReportAction(latestReport)}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <button
-                          className="inline-flex h-10 items-center gap-2 rounded-md bg-amber-200 px-3 text-sm font-black text-black transition hover:brightness-105"
+                          className="inline-flex h-10 items-center gap-2 rounded-md bg-[#17130b] px-3 text-sm font-black text-amber-100 transition hover:brightness-110"
                           onClick={() => shareReport(latestReport)}
                           type="button"
                         >
@@ -666,7 +678,7 @@ export function ProfileStatsPanel() {
                           Share
                         </button>
                         <button
-                          className="inline-flex h-10 items-center gap-2 rounded-md border border-amber-100/20 bg-black/45 px-3 text-sm font-bold text-stone-100 transition hover:border-amber-200/40"
+                          className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-900/20 bg-white/50 px-3 text-sm font-bold text-[#17130b] transition hover:bg-white"
                           onClick={() => downloadShareCard(latestReport)}
                           type="button"
                         >
@@ -674,7 +686,7 @@ export function ProfileStatsPanel() {
                           Card
                         </button>
                         <button
-                          className="inline-flex h-10 items-center gap-2 rounded-md border border-amber-100/20 bg-black/45 px-3 text-sm font-bold text-stone-100 transition hover:border-amber-200/40"
+                          className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-900/20 bg-white/50 px-3 text-sm font-bold text-[#17130b] transition hover:bg-white"
                           onClick={() => copyShareText(latestReport)}
                           type="button"
                         >
@@ -682,12 +694,12 @@ export function ProfileStatsPanel() {
                           Copy
                         </button>
                       </div>
-                      {shareStatus ? <p className="text-xs font-bold text-amber-100">{shareStatus}</p> : null}
+                      {shareStatus ? <p className="text-xs font-bold text-red-900">{shareStatus}</p> : null}
                     </div>
                   </div>
                 </article>
               ) : (
-                <div className="rounded-lg border border-amber-100/15 bg-black/35 p-5 text-sm leading-6 text-stone-300">
+                <div className="rounded-lg border border-stone-900/20 bg-white/45 p-5 text-sm leading-6 text-stone-700">
                   No real sessions yet. Close a YouTube Shorts tab after using the extension to generate your first verdict card.
                 </div>
               )}
@@ -695,56 +707,56 @@ export function ProfileStatsPanel() {
               <div className="grid gap-4 md:grid-cols-3">
                 {visibleReports.map((report, index) => (
                   <article
-                    className="rounded-lg border border-amber-100/15 bg-black/45 p-4"
+                    className="rounded-lg border border-stone-900/20 bg-white/55 p-4 shadow-sm shadow-stone-900/10"
                     key={report.id}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-xs font-bold uppercase text-amber-100">
+                        <p className="text-xs font-bold uppercase text-red-900">
                           {report.source === "tab-close" && getDisplaySessionNumber(report, reports) === latestSessionNumber
                             ? `Your latest session (Session ${getDisplaySessionNumber(report, reports)})`
                             : report.source === "tab-close"
                               ? `Your Session ${getDisplaySessionNumber(report, reports) || index + 1}`
                               : `Session ${index + 1}`}
                         </p>
-                        <h4 className="mt-1 text-lg font-black text-white">{report.date}</h4>
+                        <h4 className="mt-1 text-lg font-black text-[#17130b]">{report.date}</h4>
                         {report.source === "tab-close" ? (
-                          <p className="mt-1 text-xs text-amber-200">Captured when YouTube tab closed</p>
+                          <p className="mt-1 text-xs font-bold text-stone-600">Captured when YouTube tab closed</p>
                         ) : null}
                       </div>
-                      <span className="rounded-md border border-amber-200/20 bg-amber-200/10 px-2 py-1 text-xs font-bold text-amber-100">
+                      <span className="rounded-md border border-red-900/20 bg-red-900/10 px-2 py-1 text-xs font-bold text-red-900">
                         Recall {report.recall}/100
                       </span>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-2">
-                      <div className="rounded-md bg-white/[0.04] p-3">
-                        <p className="text-xs text-slate-400">Shorts</p>
-                        <p className="text-xl font-black text-white">{report.shorts}</p>
+                      <div className="rounded-md bg-[#17130b]/5 p-3">
+                        <p className="text-xs text-stone-500">Shorts</p>
+                        <p className="text-xl font-black text-[#17130b]">{report.shorts}</p>
                       </div>
-                      <div className="rounded-md bg-white/[0.04] p-3">
-                        <p className="text-xs text-slate-400">Trials</p>
-                        <p className="text-xl font-black text-white">{report.trials}</p>
+                      <div className="rounded-md bg-[#17130b]/5 p-3">
+                        <p className="text-xs text-stone-500">Trials</p>
+                        <p className="text-xl font-black text-[#17130b]">{report.trials}</p>
                       </div>
                     </div>
-                    <p className="mt-4 text-sm font-bold text-amber-100">{getReportVerdict(report)}</p>
-                    <p className="mt-3 text-sm leading-6 text-stone-300">
-                      <strong className="text-white">Pattern:</strong> {getReportPattern(report)}
+                    <p className="mt-4 text-sm font-bold text-red-950">{getReportVerdict(report)}</p>
+                    <p className="mt-3 text-sm leading-6 text-stone-700">
+                      <strong className="text-[#17130b]">Pattern:</strong> {getReportPattern(report)}
                     </p>
-                    <p className="mt-3 text-sm leading-6 text-stone-300">
-                      <strong className="text-white">Sentence:</strong> {getReportAction(report)}
+                    <p className="mt-3 text-sm leading-6 text-stone-700">
+                      <strong className="text-[#17130b]">Sentence:</strong> {getReportAction(report)}
                     </p>
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       {getReceiptStatRows(report).slice(0, 6).map(([label, value]) => (
-                        <div className="rounded-md bg-white/[0.04] p-2" key={label}>
-                          <p className="text-[11px] text-slate-400">{label}</p>
-                          <p className="mt-1 text-xs font-black text-white">{value}</p>
+                        <div className="rounded-md bg-[#17130b]/5 p-2" key={label}>
+                          <p className="text-[11px] text-stone-500">{label}</p>
+                          <p className="mt-1 text-xs font-black text-[#17130b]">{value}</p>
                         </div>
                       ))}
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {getTopicCountEntries(report).map(([topic, count]) => (
                         <span
-                          className="rounded-md bg-stone-900 px-2 py-1 text-xs text-stone-300"
+                          className="rounded-md bg-stone-900/10 px-2 py-1 text-xs font-bold text-stone-700"
                           key={topic}
                         >
                           {count} {topic}
@@ -756,7 +768,7 @@ export function ProfileStatsPanel() {
               </div>
               {hiddenReportCount > 0 ? (
                 <button
-                  className="mx-auto inline-flex h-10 items-center justify-center rounded-md border border-amber-100/20 bg-black/45 px-4 text-sm font-black text-amber-100 transition hover:border-amber-200/40"
+                  className="mx-auto inline-flex h-10 items-center justify-center rounded-md border border-stone-900/20 bg-[#17130b] px-4 text-sm font-black text-amber-100 transition hover:brightness-110"
                   onClick={() => setReportsExpanded(true)}
                   type="button"
                 >
