@@ -77,7 +77,7 @@ const FALLBACK_QUIZZES: Quiz[] = [
 ];
 
 function getFallbackQuiz(seed: number): Quiz {
-  return FALLBACK_QUIZZES[seed % FALLBACK_QUIZZES.length];
+  return shuffleQuiz(FALLBACK_QUIZZES[seed % FALLBACK_QUIZZES.length], seed);
 }
 
 function getClientIp(request: Request) {
@@ -99,6 +99,36 @@ function isRateLimited(clientIp: string) {
 
 function cleanString(value: unknown, maxLen: number) {
   return typeof value === "string" ? value.replace(/[<>]/g, "").slice(0, maxLen).trim() : "";
+}
+
+function normalizeAnswerText(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function seededShuffle<T>(items: T[], seed: number) {
+  const shuffled = [...items];
+  let currentSeed = seed || 17;
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    currentSeed = (currentSeed * 9301 + 49297) % 233280;
+    const swapIndex = Math.floor((currentSeed / 233280) * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+
+  return shuffled;
+}
+
+function shuffleQuiz(quiz: Quiz, seed: number) {
+  return {
+    question: quiz.question,
+    answers: seededShuffle(quiz.answers, seed + quiz.question.length)
+  };
+}
+
+function hasDistinctAnswers(answers: QuizAnswer[]) {
+  const normalized = answers.map((answer) => normalizeAnswerText(answer.text));
+  if (normalized.some((answer) => answer.length < 3)) return false;
+  return new Set(normalized).size === answers.length;
 }
 
 function cleanEvidence(value: unknown): EvidenceItem | null {
@@ -140,7 +170,9 @@ function parseQuizJson(raw: string): Quiz | null {
     if (correctCount !== 1) return null;
     for (const answer of data.answers) {
       if (typeof answer.text !== "string" || typeof answer.correct !== "boolean") return null;
+      answer.text = answer.text.trim();
     }
+    if (!hasDistinctAnswers(data.answers as QuizAnswer[])) return null;
     return data as Quiz;
   } catch {
     return null;
@@ -207,6 +239,9 @@ Evidence rules:
 - Never invent details that are not in the evidence.
 - If evidenceStrength is weak, do not make a specific factual video question. Ask a general Scroll Court attention question instead.
 - Do not claim to understand the full video, transcript, audio, comments, or ending unless captions provide that text.
+- The three answer choices must be clearly distinct from each other.
+- You may include one clever/trick distractor, but the correct answer must still be obviously distinct from the wrong choices.
+- Do not put the correct answer first every time; vary its position.
 
 Return ONLY valid JSON with this exact structure:
 {
@@ -235,7 +270,7 @@ Roast intensity: ${typeof body.roastIntensity === "string" ? body.roastIntensity
 
     const raw = completion.choices[0]?.message?.content ?? "";
     const quiz = parseQuizJson(raw);
-    return withCors(NextResponse.json(quiz ?? getFallbackQuiz(seed)));
+    return withCors(NextResponse.json(quiz ? shuffleQuiz(quiz, seed) : getFallbackQuiz(seed)));
   } catch (error) {
     console.error("generate-quiz error:", error);
     return withCors(NextResponse.json(getFallbackQuiz(seed)));
