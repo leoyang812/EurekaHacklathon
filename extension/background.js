@@ -191,7 +191,7 @@ function buildCloseReport(state) {
     trials: quizCount,
     recall,
     accuracy,
-    rank: recall >= 70 ? "Stoic Swipe Survivor" : "Doomscroll Defendant",
+    rank: recall >= 70 ? "Sapient Scroller" : "Tung Tung Trogolodyte",
     courtMood: getCourtMood(recall),
     correctTrials: correctQuizCount,
     wrongTrials: wrongQuizCount,
