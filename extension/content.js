@@ -656,6 +656,38 @@
     return [...new Set(videos)].filter((video) => video instanceof HTMLVideoElement);
   }
 
+  function getActiveVideoRect() {
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const visibleVideos = getActiveVideoElements()
+      .map((video) => video.getBoundingClientRect())
+      .filter((rect) =>
+        rect.width > 120 &&
+        rect.height > 200 &&
+        rect.right > 0 &&
+        rect.left < viewportWidth &&
+        rect.bottom > 0 &&
+        rect.top < viewportHeight
+      );
+
+    if (!visibleVideos.length) return null;
+
+    return visibleVideos.sort((a, b) => (b.width * b.height) - (a.width * a.height))[0];
+  }
+
+  function updatePanelVideoAnchors() {
+    if (!panelRoot || !isShortsUrl()) return;
+    const rect = getActiveVideoRect();
+    if (!rect) {
+      panelRoot.style.removeProperty("--sc-video-left");
+      panelRoot.style.removeProperty("--sc-video-right");
+      return;
+    }
+
+    panelRoot.style.setProperty("--sc-video-left", `${Math.round(rect.left)}px`);
+    panelRoot.style.setProperty("--sc-video-right", `${Math.round(rect.right)}px`);
+  }
+
   function pauseActiveVideoForCourt() {
     const videos = getActiveVideoElements();
     pausedVideosForCourt = videos.filter((video) => !video.paused);
@@ -1075,6 +1107,7 @@
       return;
     }
 
+    updatePanelVideoAnchors();
     const hasJudgeFeedback = Boolean(
       state.lastQuote &&
       state.lastPhilosopher &&
@@ -1290,6 +1323,7 @@
     activeVideoId = meta.videoId;
     activeMeta = meta;
     activeVideoStartedAt = Date.now();
+    updatePanelVideoAnchors();
 
     await upsertEvidence({
       ...meta,
@@ -1359,6 +1393,7 @@
 
     document.addEventListener("keydown", blockNavKeys, true);
     document.addEventListener("wheel", blockWheel, { capture: true, passive: false });
+    window.addEventListener("resize", updatePanelVideoAnchors);
 
     render();
     renderOverlay();
@@ -1366,6 +1401,7 @@
     registerShortsTabForCloseReport();
     watchUrlChanges();
     setInterval(collectCaptions, 1000);
+    setInterval(updatePanelVideoAnchors, 1000);
     startScrollUnlockWatchdog();
 
     chrome.storage.onChanged.addListener((changes, areaName) => {
