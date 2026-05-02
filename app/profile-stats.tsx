@@ -54,31 +54,53 @@ const reportsStorageKey = "scrollCourtLandingReports";
 
 const ranks = [
   {
-    name: "Doomscroll Defendant",
+    name: "Tung Tung Trogolodyte",
     minCorrectAnswers: 0,
     reward: "Unlocked: Court-appointed side eye"
   },
   {
-    name: "Apprentice Witness",
+    name: "Doomscrolling Defendant",
     minCorrectAnswers: 5,
     reward: "Unlocked: Bronze philosopher badge"
   },
   {
-    name: "Stoic Swipe Survivor",
+    name: "Sapient Scroller",
     minCorrectAnswers: 20,
     reward: "Unlocked: Cyan profile frame"
   },
   {
-    name: "Oracle of Restraint",
+    name: "Locked-in Lawyer",
     minCorrectAnswers: 50,
     reward: "Unlocked: Golden verdict receipt"
   },
   {
-    name: "Supreme Court of Focus",
+    name: "Flow State",
     minCorrectAnswers: 100,
     reward: "Unlocked: Socrates jumpscare immunity token"
   }
 ];
+
+const rankAliases: Record<string, string> = {
+  "Doomscroll Defendant": "Tung Tung Trogolodyte",
+  "Apprentice Witness": "Doomscrolling Defendant",
+  "Stoic Swipe Survivor": "Sapient Scroller",
+  "Oracle of Restraint": "Locked-in Lawyer",
+  "Supreme Court of Focus": "Flow State"
+};
+
+function normalizeRankName(value: unknown) {
+  if (typeof value === "string") {
+    return rankAliases[value] ?? value;
+  }
+  return ranks[0].name;
+}
+
+function normalizeReport(report: SessionReport) {
+  return {
+    ...report,
+    rank: normalizeRankName(report.rank)
+  };
+}
 
 function getRank(correctAnswers: number) {
   return [...ranks].reverse().find((rank) => correctAnswers >= rank.minCorrectAnswers) ?? ranks[0];
@@ -344,7 +366,9 @@ export function ProfileStatsPanel() {
       if (stored) setStats({ ...defaultStats, ...JSON.parse(stored) });
       if (storedReports) {
         const parsedReports = JSON.parse(storedReports);
-        setReports(Array.isArray(parsedReports) ? getRealReports(parsedReports) : defaultReports);
+        setReports(Array.isArray(parsedReports)
+          ? getRealReports(parsedReports.map((item: unknown) => normalizeReport(item as SessionReport)))
+          : defaultReports);
       }
     } catch {
       setStats(defaultStats);
@@ -365,7 +389,7 @@ export function ProfileStatsPanel() {
         trials: Number(parsed.trials || 0),
         recall: Number(parsed.recall || 50),
         accuracy: typeof parsed.accuracy === "number" ? clampAccuracy(parsed.accuracy) : undefined,
-        rank: typeof parsed.rank === "string" ? parsed.rank : "Doomscroll Defendant",
+        rank: normalizeRankName(typeof parsed.rank === "string" ? parsed.rank : undefined),
         courtMood: typeof parsed.courtMood === "string" ? parsed.courtMood : undefined,
         correctTrials: cleanNumber(parsed.correctTrials),
         wrongTrials: cleanNumber(parsed.wrongTrials),
