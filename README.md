@@ -1,8 +1,8 @@
 # The Recall Trial
 
-The Recall Trial is a Chrome extension and landing site for interrupting YouTube Shorts doomscrolling with comedy, attention checks, Recall Score changes, and a final philosopher roast receipt.
+A Chrome extension that interrupts your YouTube Shorts sessions, quizzes what you actually watched, and has ancient philosophers roast you with an AI receipt.
 
-## Local Setup
+## Setup
 
 1. Install dependencies:
 
@@ -10,7 +10,7 @@ The Recall Trial is a Chrome extension and landing site for interrupting YouTube
 npm install
 ```
 
-2. Create `.env.local` from `.env.example`:
+2. Copy `.env.example` to `.env.local` and fill it in:
 
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
@@ -19,50 +19,45 @@ OPENAI_MODEL=gpt-4o-mini
 OPENAI_VISION_MODEL=gpt-4o-mini
 ```
 
-Use that same demo password in the extension popup. The OpenAI key stays only in `.env.local` and is never placed in `extension/`.
+The demo password is what you'll enter in the extension popup. Keep the OpenAI key out of the `extension/` folder entirely.
 
-3. Run the Next.js app:
+3. Run the dev server:
 
 ```powershell
 npm run dev
 ```
 
-## Load the Chrome Extension
+## Loading the Extension
 
-1. Open `chrome://extensions`.
-2. Turn on Developer mode.
-3. Click `Load unpacked`.
-4. Select the `extension` folder.
-5. Open `https://www.youtube.com/shorts/*`.
+1. Go to `chrome://extensions`
+2. Turn on Developer mode
+3. Click `Load unpacked`
+4. Select the `extension` folder
+5. Open any `youtube.com/shorts/` URL
 
-The extension injects floating Recall Trial panels directly into YouTube Shorts. Trial summons are intentionally randomized, so the UI does not reveal the next interruption count. Use **End Session** to generate the final receipt.
+The summons timing is randomized on purpose so the extension doesn't feel predictable. Hit **End Session** when you want the final receipt.
 
-## Security Notes
+## Security
 
-- Do not commit `.env.local`.
-- Do not put `OPENAI_API_KEY` in `extension/`.
-- The extension calls `/api/generate-quiz`, `/api/generate-receipt`, and `/api/analyze-frame`; only Next.js API routes call OpenAI.
-- All API routes require `DEMO_PASSWORD`; enter it in the extension popup before using AI receipts/attention checks.
-- The evidence system uses captions when available, one temporary visible-frame screenshot per Short, and metadata. Screenshots are sent only to `/api/analyze-frame` and are not stored.
-- The extension does not receive YouTube video files, full transcripts, audio, comments, cookies, accounts, emails, or browsing history.
-- If `OPENAI_API_KEY` is missing or OpenAI fails, the API returns a hardcoded fallback receipt.
-- The extension stores local demo stats, recent text evidence, settings, and the user-entered demo access code in `chrome.storage.local`.
+- Don't commit `.env.local`
+- Don't put your `OPENAI_API_KEY` anywhere inside `extension/`
+- The extension never touches video files, audio, transcripts, cookies, or your account. It reads captions, grabs one temporary frame screenshot per Short, and uses metadata. Screenshots go to `/api/analyze-frame` and are not stored
+- If OpenAI fails or the key is missing, the API falls back to a hardcoded receipt
+- Everything else (stats, evidence, your demo password) lives in `chrome.storage.local`
 
-## Extension Files
+## File Overview
 
-- `extension/manifest.json`: Manifest V3 config.
-- `extension/content.js`: YouTube Shorts panel, URL tracking, randomized court attention checks, caption buffer, evidence selection, topic detection, receipt request.
-- `extension/background.js`: Calls the local/deployed Next.js APIs from the extension context and performs temporary visible-frame capture on YouTube Shorts only.
-- `extension/assets/`: Optional philosopher portraits. Add `socrates.png`, `plato.png`, `diogenes.png`, or `aristotle.png` to show real images in the animated court popup.
-- `extension/styles.css`: Isolated panel styling.
-- `extension/popup.html`: Popup dashboard.
-- `extension/popup.js`: Popup storage controls.
+| File | What it does |
+|---|---|
+| `extension/manifest.json` | Manifest V3 config |
+| `extension/content.js` | Injects the trial panel, tracks URLs, buffers captions, picks evidence, fires quiz and receipt requests |
+| `extension/background.js` | Handles API calls from the extension context, captures temporary frame screenshots |
+| `extension/assets/` | Philosopher portraits and the jumpscare sound |
+| `extension/popup.html` / `popup.js` | The extension popup and its storage controls |
 
-## API
+## API Routes
 
-`POST /api/generate-receipt`
-
-Expected JSON:
+**`POST /api/generate-receipt`**
 
 ```json
 {
@@ -74,9 +69,9 @@ Expected JSON:
 }
 ```
 
-`POST /api/analyze-frame`
+**`POST /api/analyze-frame`**
 
-Accepts a temporary `imageDataUrl` plus metadata and returns:
+Takes an `imageDataUrl` plus metadata, returns:
 
 ```json
 {
@@ -86,20 +81,18 @@ Accepts a temporary `imageDataUrl` plus metadata and returns:
 }
 ```
 
-`POST /api/generate-quiz`
+**`POST /api/generate-quiz`**
 
-Accepts `selectedEvidence` and returns the existing quiz shape. Caption evidence is treated as strongest, frame summaries as medium, and metadata as weak.
-
-Response:
+Takes `selectedEvidence` and returns a 4-option quiz. Captions are weighted highest, frame summaries medium, metadata lowest.
 
 ```json
 {
   "question": "What detail did the Short focus on?",
   "answers": [
-    { "text": "A specific detail supported by the evidence", "correct": true },
-    { "text": "A plausible but incorrect near-miss", "correct": false },
-    { "text": "Another distinct near-miss", "correct": false },
-    { "text": "A fourth distinct near-miss", "correct": false }
+    { "text": "...", "correct": true },
+    { "text": "...", "correct": false },
+    { "text": "...", "correct": false },
+    { "text": "...", "correct": false }
   ]
 }
 ```
