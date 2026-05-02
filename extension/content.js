@@ -9,13 +9,6 @@
   const MIN_WATCH_DWELL_MS = 3000;
   const JUDGMENT_MIN_SHORTS = 4;
   const JUDGMENT_MAX_SHORTS = 5;
-  const JUMPSCARE_SOUND = "assets/sound/lordsonny-cinematic-hit-159487.mp3";
-  const JUMPSCARE_DURATION_MS = 2000;
-  const JUMPSCARE_IMAGES = [
-    "assets/Images/socrates-jumpscare.png",
-    "assets/Images/socrates-jumpscare2.png",
-    "assets/Images/socrates-jumpscare3.png"
-  ];
 
   const COURT_QUOTES = [
     { philosopher: "Socrates", text: '"If scrolling is your power, then what are you without it?" - Socrates' },
@@ -423,34 +416,6 @@
     root.querySelector(".sc-aa-character")?.addEventListener("error", (event) => {
       event.currentTarget.style.display = "none";
     });
-  }
-
-  function triggerJumpscare() {
-    document.getElementById("sc-jumpscare")?.remove();
-
-    const imagePath = JUMPSCARE_IMAGES[Math.floor(Math.random() * JUMPSCARE_IMAGES.length)];
-    const scare = document.createElement("div");
-    scare.id = "sc-jumpscare";
-    scare.setAttribute("aria-hidden", "true");
-    scare.innerHTML = `
-      <img class="sc-jumpscare-img" src="${chrome.runtime.getURL(imagePath)}" alt="" />
-      <div class="sc-jumpscare-flash"></div>
-    `;
-    document.documentElement.appendChild(scare);
-
-    const audio = new Audio(chrome.runtime.getURL(JUMPSCARE_SOUND));
-    audio.volume = 0.82;
-    audio.play().catch(() => {
-      // Some browser autoplay policies still block extension audio.
-    });
-
-    setTimeout(() => {
-      scare.classList.add("sc-jumpscare-out");
-    }, JUMPSCARE_DURATION_MS - 260);
-
-    setTimeout(() => {
-      scare.remove();
-    }, JUMPSCARE_DURATION_MS);
   }
 
   function getTopicsFromText(text) {
@@ -1001,12 +966,6 @@
         });
         await scheduleNextJudgment();
         showTemporaryJudgePanel(Number.POSITIVE_INFINITY);
-
-        if (!answer.correct && nextWrongStreak > 0 && nextWrongStreak % 3 === 0) {
-          setTimeout(() => {
-            triggerJumpscare();
-          }, 120);
-        }
 
         setTimeout(() => {
           overlay.remove();
