@@ -9,14 +9,17 @@
   const MIN_WATCH_DWELL_MS = 3000;
   const JUDGMENT_MIN_SHORTS = 4;
   const JUDGMENT_MAX_SHORTS = 5;
-
-  const RANKS = [
-    { min: 90, name: "Oracle of Restraint" },
-    { min: 70, name: "Stoic Swipe Survivor" },
-    { min: 50, name: "Apprentice Philosopher" },
-    { min: 25, name:  "Court Jester of Focus" },
-    { min: -999, name: "Doomscroll Defendant" }
+  const JUMPSCARE_SOUND = "assets/sound/lordsonny-cinematic-hit-159487.mp3";
+  const JUMPSCARE_IMAGES = [
+    "assets/Images/Screenshot 2026-05-02 051950.png",
+    "assets/Images/Screenshot 2026-05-02 051958.png",
+    "assets/Images/Screenshot 2026-05-02 052005.png",
+    "assets/Images/Screenshot 2026-05-02 052013.png",
+    "assets/Images/Screenshot 2026-05-02 052019.png",
+    "assets/Images/Screenshot 2026-05-02 052025.png",
+    "assets/Images/Screenshot 2026-05-02 055436.png"
   ];
+
   const QUOTES = [
     "Socrates asked what you learned. Your thumb declined to comment.",
     "Plato's cave had shadows. Yours has Subway Surfers under a podcast clip.",
@@ -29,17 +32,143 @@
     "Plato left the cave. You opened another Short.",
     "The jury finds your attention span guilty of fleeing the scene."
   ];
+  const WRONG_FEEDBACK_QUOTES = [
+    { philosopher: "Socrates", text: "You watched it. Tell me: what did you actually understand?", use: "default" },
+    { philosopher: "Socrates", text: "If you cannot answer, were you ever paying attention?", use: "default" },
+    { philosopher: "Socrates", text: "You say you saw it. Then why can you not explain it?", use: "default" },
+    { philosopher: "Socrates", text: "Is it knowledge you seek, or simply motion?", use: "mid" },
+    { philosopher: "Socrates", text: "If scrolling is your power, why does it control you?", use: "strong" },
+    { philosopher: "Diogenes", text: "I searched for thought. I found you watching clips.", use: "streak" },
+    { philosopher: "Diogenes", text: "You consume endlessly. You produce nothing.", use: "streak" },
+    { philosopher: "Diogenes", text: "Even a dog remembers what it sees.", use: "harsh" },
+    { philosopher: "Diogenes", text: "I owned nothing. You have everything, and still this?", use: "harsh" },
+    { philosopher: "Diogenes", text: "You scroll like a king. Yet rule nothing.", use: "harsh" },
+    { philosopher: "Plato", text: "You stare at shadows, and call it understanding.", use: "default" },
+    { philosopher: "Plato", text: "You left reality, only to enter another illusion.", use: "default" },
+    { philosopher: "Plato", text: "The screen shows you movement. Your mind remains still.", use: "mid" },
+    { philosopher: "Plato", text: "You mistake appearance for truth.", use: "mid" },
+    { philosopher: "Plato", text: "You watch reflections, and believe you have learned.", use: "strong" },
+    { philosopher: "Aristotle", text: "The mind is meant to think. Yours scrolls.", use: "default" },
+    { philosopher: "Aristotle", text: "You gathered information. None became knowledge.", use: "default" },
+    { philosopher: "Aristotle", text: "You observed the act, but not its meaning.", use: "mid" },
+    { philosopher: "Aristotle", text: "Your attention exists. You simply misused it.", use: "mid" },
+    { philosopher: "Aristotle", text: "You chose consumption over understanding.", use: "strong" },
+    { philosopher: "Marcus Aurelius", text: "You had control. You chose not to use it.", use: "default" },
+    { philosopher: "Marcus Aurelius", text: "Your attention was yours. Until you gave it away.", use: "default" },
+    { philosopher: "Marcus Aurelius", text: "You let distraction win without resistance.", use: "mid" },
+    { philosopher: "Marcus Aurelius", text: "You were present. But not awake.", use: "mid" },
+    { philosopher: "Marcus Aurelius", text: "You lost nothing. Yet gained even less.", use: "strong" }
+  ];
+  const RIGHT_FEEDBACK_QUOTES = [
+    { philosopher: "Socrates", text: "You answered correctly. But do you understand why?", use: "default" },
+    { philosopher: "Socrates", text: "You noticed. Will you remember?", use: "default" },
+    { philosopher: "Socrates", text: "You saw it. Most do not.", use: "default" },
+    { philosopher: "Socrates", text: "You are aware. For now.", use: "mid" },
+    { philosopher: "Socrates", text: "You understood this moment. What about the next?", use: "strong" },
+    { philosopher: "Plato", text: "You looked past the illusion. Briefly.", use: "default" },
+    { philosopher: "Plato", text: "You saw more than shadows. Do not return to them.", use: "default" },
+    { philosopher: "Plato", text: "You recognized the image. Not yet the truth.", use: "mid" },
+    { philosopher: "Plato", text: "Awareness is the first step out of the cave.", use: "mid" },
+    { philosopher: "Plato", text: "You glimpsed reality. It did not last long.", use: "strong" },
+    { philosopher: "Aristotle", text: "Your mind performed its function. Momentarily.", use: "default" },
+    { philosopher: "Aristotle", text: "You understood. Now apply it.", use: "default" },
+    { philosopher: "Aristotle", text: "You processed what you saw. That is rare here.", use: "mid" },
+    { philosopher: "Aristotle", text: "Knowledge appeared. Will it remain?", use: "mid" },
+    { philosopher: "Aristotle", text: "You used your attention correctly. Once.", use: "strong" },
+    { philosopher: "Marcus Aurelius", text: "You were attentive. Continue.", use: "default" },
+    { philosopher: "Marcus Aurelius", text: "A moment of clarity. Do not waste it.", use: "default" },
+    { philosopher: "Marcus Aurelius", text: "You acted with awareness. That is enough.", use: "mid" },
+    { philosopher: "Marcus Aurelius", text: "You did what was within your control.", use: "mid" },
+    { philosopher: "Marcus Aurelius", text: "You remained present. Few do.", use: "strong" },
+    { philosopher: "Sun Tzu", text: "You saw the pattern. The algorithm did not win.", use: "default" },
+    { philosopher: "Sun Tzu", text: "You observed without losing control.", use: "default" },
+    { philosopher: "Sun Tzu", text: "You understood the signal, not just the noise.", use: "mid" },
+    { philosopher: "Sun Tzu", text: "Discipline appeared. Maintain it.", use: "mid" },
+    { philosopher: "Sun Tzu", text: "You resisted distraction. Briefly.", use: "strong" }
+  ];
+  const TOPIC_FEEDBACK_QUOTES = {
+    fitness: [
+      { philosopher: "Aristotle", text: "Training the body is simpler than training attention.", use: "topic" },
+      { philosopher: "Marcus Aurelius", text: "Strength without awareness is merely motion.", use: "topic" }
+    ],
+    food: [
+      { philosopher: "Diogenes", text: "You remember the feast. Do you remember the point?", use: "topic" },
+      { philosopher: "Aristotle", text: "Appetite noticed. Understanding pending.", use: "topic" }
+    ],
+    gaming: [
+      { philosopher: "Sun Tzu", text: "You saw the game. Did you study the strategy?", use: "topic" },
+      { philosopher: "Plato", text: "Another simulation. Another shadow.", use: "topic" }
+    ],
+    brainrot: [
+      { philosopher: "Diogenes", text: "The empire declines one sound effect at a time.", use: "topic" },
+      { philosopher: "Socrates", text: "Define rizz. Then define your purpose.", use: "topic" }
+    ],
+    sports: [
+      { philosopher: "Sun Tzu", text: "You saw the contest. Did you notice the tactic?", use: "topic" },
+      { philosopher: "Aristotle", text: "The action was visible. The cause was harder.", use: "topic" }
+    ]
+  };
   const SUMMONS_COPY = [
     "The court may summon you at any moment.",
-    "Judgment arrives when wisdom fails.",
+    "Judgment arrives when recall fails.",
     "Summons timing: sealed by the court.",
     "The philosophers are watching the pattern, not the clock."
   ];
   const PHILOSOPHERS = [
-    { name: "Socrates", asset: "assets/socrates.png", fallback: "S" },
-    { name: "Plato", asset: "assets/plato.png", fallback: "P" },
-    { name: "Diogenes", asset: "assets/diogenes.png", fallback: "D" },
-    { name: "Aristotle", asset: "assets/aristotle.png", fallback: "A" }
+    {
+      name: "Socrates",
+      fallback: "S",
+      assets: {
+        default: "assets/Images/socrates1.jpg",
+        intense: "assets/Images/socrates2.jpg",
+        harsh: "assets/Images/socrates3.jpg"
+      }
+    },
+    {
+      name: "Plato",
+      fallback: "P",
+      assets: {
+        default: "assets/Images/plato1.jpg",
+        intense: "assets/Images/plato2.png",
+        harsh: "assets/Images/plato2.png"
+      }
+    },
+    {
+      name: "Diogenes",
+      fallback: "D",
+      assets: {
+        default: "assets/Images/diogenes1.jpg",
+        intense: "assets/Images/diogenes2.jpg",
+        harsh: "assets/Images/diogenes2.jpg"
+      }
+    },
+    {
+      name: "Aristotle",
+      fallback: "A",
+      assets: {
+        default: "assets/Images/aristotle1.jpg",
+        intense: "assets/Images/aristotle2.jpg",
+        harsh: "assets/Images/aristotle2.jpg"
+      }
+    },
+    {
+      name: "Marcus Aurelius",
+      fallback: "M",
+      assets: {
+        default: "assets/Images/marcus1.jpg",
+        intense: "assets/Images/marcus2.jpg",
+        harsh: "assets/Images/marcus2.jpg"
+      }
+    },
+    {
+      name: "Sun Tzu",
+      fallback: "S",
+      assets: {
+        default: "assets/Images/suntzu1.jpg",
+        intense: "assets/Images/suntzu2.jpg",
+        harsh: "assets/Images/suntzu2.jpg"
+      }
+    }
   ];
   const TOPIC_KEYWORDS = {
     food: ["cook", "recipe", "food", "meal", "spicy", "eat", "restaurant"],
@@ -64,6 +193,9 @@
     sessionTopics: [],
     roastIntensity: "medium",
     lastQuote: "",
+    lastPhilosopher: "",
+    lastPhilosopherAsset: "",
+    wrongStreak: 0,
     sessionEnded: false
   };
 
@@ -78,8 +210,11 @@
   let captionBuffer = [];
   const frameAnalysisCounts = new Map();
   const countedVideoIds = new Set();
-  let pausedVideoForCourt = null;
+  let pausedVideosForCourt = [];
   let shouldResumeVideoAfterCourt = false;
+  let judgePanelVisibleUntil = 0;
+  let judgePanelTimer = null;
+  let judgePanelShouldPop = false;
 
   function storageGet() {
     return new Promise((resolve) => {
@@ -96,8 +231,12 @@
     });
   }
 
-  function getRank(wisdom) {
-    return RANKS.find((rank) => wisdom >= rank.min).name;
+  function getCourtMood(wisdom) {
+    if (wisdom >= 85) return "Impressed";
+    if (wisdom >= 65) return "Cautiously hopeful";
+    if (wisdom >= 45) return "Watching closely";
+    if (wisdom >= 25) return "Deeply suspicious";
+    return "Preparing charges";
   }
 
   function clampWisdom(value) {
@@ -112,6 +251,74 @@
     return QUOTES[Math.floor(Math.random() * QUOTES.length)];
   }
 
+  function pickItem(items, seed) {
+    if (!items.length) return null;
+    return items[Math.abs(seed) % items.length];
+  }
+
+  function getTopicFeedback(topics, seed) {
+    const topic = (topics || []).find((item) => TOPIC_FEEDBACK_QUOTES[item]);
+    return topic ? pickItem(TOPIC_FEEDBACK_QUOTES[topic], seed) : null;
+  }
+
+  function selectFeedbackQuote({ correct, wrongStreak, recallScore, topics }) {
+    const seed = state.watchedCount + state.quizCount + wrongStreak + recallScore;
+    const topicQuote = getTopicFeedback(topics, seed);
+
+    if (correct) {
+      let candidates = RIGHT_FEEDBACK_QUOTES.filter((quote) => quote.use === "default" || quote.use === "mid");
+      if (recallScore >= 65) {
+        candidates = RIGHT_FEEDBACK_QUOTES.filter((quote) =>
+          ["Marcus Aurelius", "Aristotle", "Sun Tzu"].includes(quote.philosopher)
+        );
+      }
+      if (recallScore >= 85) {
+        candidates = candidates.filter((quote) => quote.use === "mid" || quote.use === "strong");
+      }
+      return topicQuote && recallScore >= 65 ? topicQuote : pickItem(candidates, seed);
+    }
+
+    if (wrongStreak >= 3) {
+      const harsh = WRONG_FEEDBACK_QUOTES.filter((quote) =>
+        ["Diogenes", "Plato", "Socrates"].includes(quote.philosopher) &&
+        (quote.use === "harsh" || quote.use === "strong")
+      );
+      return pickItem(harsh, seed);
+    }
+
+    if (wrongStreak >= 2) {
+      const streak = WRONG_FEEDBACK_QUOTES.filter((quote) =>
+        ["Diogenes", "Plato", "Socrates"].includes(quote.philosopher) &&
+        (quote.use === "streak" || quote.use === "mid" || quote.use === "strong")
+      );
+      return pickItem(streak, seed);
+    }
+
+    const candidates = WRONG_FEEDBACK_QUOTES.filter((quote) => quote.use === "default" || quote.use === "mid");
+    return topicQuote && recallScore < 45 ? topicQuote : pickItem(candidates, seed);
+  }
+
+  function getFeedbackImageTone({ correct, quoteUse, wrongStreak, recallScore }) {
+    if (!correct && (wrongStreak >= 3 || quoteUse === "harsh")) return "harsh";
+    if (!correct && (wrongStreak >= 2 || quoteUse === "strong" || quoteUse === "streak")) return "intense";
+    if (correct && (recallScore >= 85 || quoteUse === "strong")) return "intense";
+    return "default";
+  }
+
+  function getPhilosopherForName(name) {
+    return PHILOSOPHERS.find((item) => item.name === name);
+  }
+
+  function getFeedbackAsset(feedback, context) {
+    const philosopher = getPhilosopherForName(feedback?.philosopher);
+    if (!philosopher) return "";
+    const tone = getFeedbackImageTone({
+      ...context,
+      quoteUse: feedback?.use
+    });
+    return philosopher.assets?.[tone] || philosopher.assets?.default || "";
+  }
+
   function getSummonsCopy() {
     return SUMMONS_COPY[state.watchedCount % SUMMONS_COPY.length];
   }
@@ -124,15 +331,58 @@
     return location.pathname.split("/shorts/")[1]?.split(/[/?#]/)[0] || "";
   }
 
-  function getPhilosopherMarkup() {
-    const philosopher = PHILOSOPHERS[state.watchedCount % PHILOSOPHERS.length];
-    const url = chrome.runtime.getURL(philosopher.asset);
+  function getPhilosopherMarkup(
+    preferredName = state.lastPhilosopher,
+    preferredAsset = state.lastPhilosopherAsset,
+    extraClass = ""
+  ) {
+    const philosopher =
+      getPhilosopherForName(preferredName) ||
+      PHILOSOPHERS[state.watchedCount % PHILOSOPHERS.length];
+    const asset = preferredAsset || philosopher.assets?.default || "";
+    const img = asset
+      ? `<img class="sc-philosopher-img" src="${chrome.runtime.getURL(asset)}" alt="${philosopher.name}" />`
+      : "";
     return `
-      <div class="sc-philosopher" aria-label="${philosopher.name}">
-        <img class="sc-philosopher-img" src="${url}" alt="${philosopher.name}" />
+      <div class="sc-philosopher ${extraClass}" aria-label="${philosopher.name}">
+        ${img}
         <span class="sc-philosopher-fallback">${philosopher.fallback}</span>
       </div>
     `;
+  }
+
+  function hideBrokenPhilosopherImage(root = document) {
+    root.querySelector(".sc-philosopher-img")?.addEventListener("error", (event) => {
+      event.currentTarget.style.display = "none";
+    });
+  }
+
+  function triggerJumpscare(seed = state.watchedCount + state.quizCount) {
+    document.getElementById("sc-jumpscare")?.remove();
+
+    const imagePath = pickItem(JUMPSCARE_IMAGES, seed) || JUMPSCARE_IMAGES[0];
+    const scare = document.createElement("div");
+    scare.id = "sc-jumpscare";
+    scare.setAttribute("aria-hidden", "true");
+    scare.innerHTML = `
+      <img class="sc-jumpscare-img" src="${chrome.runtime.getURL(imagePath)}" alt="" />
+      <div class="sc-jumpscare-flash"></div>
+    `;
+    document.documentElement.appendChild(scare);
+
+    const audio = new Audio(chrome.runtime.getURL(JUMPSCARE_SOUND));
+    audio.volume = 0.82;
+    audio.play().catch(() => {
+      // Some browser autoplay policies still block extension audio.
+    });
+
+    setTimeout(() => {
+      scare.classList.add("sc-jumpscare-out");
+    }, 720);
+
+    setTimeout(() => {
+      scare.remove();
+    }, 1050);
   }
 
   function getTopicsFromText(text) {
@@ -160,6 +410,29 @@
     if ((item.frameTopics || []).length || (item.metadataTopics || []).length) return "medium";
     if ((item.title || "").trim().length > 8) return "medium";
     return "weak";
+  }
+
+  function getEvidenceStrengthMeta(strength) {
+    const value = ["weak", "medium", "strong"].includes(strength) ? strength : "weak";
+    const copy = {
+      weak: {
+        label: "Weak",
+        verdict: "Quiz skipped",
+        detail: "Not enough reliable evidence for an attention check."
+      },
+      medium: {
+        label: "Medium",
+        verdict: "Questionable but admissible",
+        detail: "Enough title, topic, caption, or frame evidence to ask carefully."
+      },
+      strong: {
+        label: "Strong",
+        verdict: "Admissible evidence",
+        detail: "Captions or clear context support a specific attention check."
+      }
+    };
+
+    return { value, ...copy[value] };
   }
 
   function extractVideoMeta() {
@@ -308,7 +581,7 @@
       "SCROLL COURT RECEIPT",
       `Charges: ${state.watchedCount} Shorts entered into evidence.`,
       `Evidence: ${topics}.`,
-      `Wisdom Damage: ${state.wisdom}/100, rank ${getRank(state.wisdom)}.`,
+      `Recall Score: ${state.wisdom}/100. Court mood: ${getCourtMood(state.wisdom)}.`,
       "",
       "Philosopher Verdict: Socrates asked what you learned. The record shows a long pause and one suspicious swipe.",
       "",
@@ -324,52 +597,134 @@
 
   function unlockScroll() {
     overlayActive = false;
-    document.body.style.overflow = "";
-    document.documentElement.style.overflow = "";
+    document.body.style.removeProperty("overflow");
+    document.body.style.removeProperty("overflow-y");
+    document.documentElement.style.removeProperty("overflow");
+    document.documentElement.style.removeProperty("overflow-y");
   }
 
-  function getActiveVideoElement() {
+  function hasCourtOverlay() {
+    const overlay = document.getElementById("sc-overlay");
+    return Boolean(overlay && overlay.isConnected);
+  }
+
+  function ensureScrollUnlockedWithoutOverlay() {
+    if (!hasCourtOverlay()) {
+      unlockScroll();
+      return true;
+    }
+    return false;
+  }
+
+  function getActiveVideoElements() {
     const activeRenderer = document.querySelector("ytd-reel-video-renderer[is-active]");
-    return activeRenderer?.querySelector("video") || document.querySelector("video");
+    const videos = [
+      ...(activeRenderer ? [...activeRenderer.querySelectorAll("video")] : []),
+      ...document.querySelectorAll("video")
+    ];
+
+    return [...new Set(videos)].filter((video) => video instanceof HTMLVideoElement);
   }
 
   function pauseActiveVideoForCourt() {
-    const video = getActiveVideoElement();
-    if (!video || video.paused) {
-      pausedVideoForCourt = null;
-      shouldResumeVideoAfterCourt = false;
+    const videos = getActiveVideoElements();
+    pausedVideosForCourt = videos.filter((video) => !video.paused);
+    shouldResumeVideoAfterCourt = pausedVideosForCourt.length > 0;
+
+    if (!videos.length) {
       return;
     }
 
-    pausedVideoForCourt = video;
-    shouldResumeVideoAfterCourt = true;
-    video.pause();
+    videos.forEach((video) => video.pause());
+
+    [80, 240, 600].forEach((delay) => {
+      setTimeout(() => {
+        if (!overlayActive) return;
+        getActiveVideoElements().forEach((video) => video.pause());
+      }, delay);
+    });
   }
 
   function resumeVideoAfterCourt() {
-    if (!shouldResumeVideoAfterCourt || !pausedVideoForCourt) return;
+    if (!shouldResumeVideoAfterCourt || !pausedVideosForCourt.length) return;
 
-    const video = pausedVideoForCourt;
-    pausedVideoForCourt = null;
+    const videos = [...pausedVideosForCourt];
+    pausedVideosForCourt = [];
     shouldResumeVideoAfterCourt = false;
 
-    video.play().catch(() => {
-      // Chrome may block playback after some user/extension interactions.
+    videos.forEach((video) => {
+      if (!document.documentElement.contains(video)) return;
+      video.play().catch(() => {
+        // Chrome may block playback after some user/extension interactions.
+      });
     });
   }
 
   function blockNavKeys(event) {
-    if (overlayActive && ["ArrowUp", "ArrowDown", " ", "k", "j"].includes(event.key)) {
+    const scrollKeys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " ", "j", "k"];
+    if (!hasCourtOverlay() && Date.now() < judgePanelVisibleUntil && scrollKeys.includes(event.key)) {
+      hideTemporaryJudgePanel();
+    }
+
+    if (!hasCourtOverlay()) {
+      unlockScroll();
+      return;
+    }
+    if (["ArrowUp", "ArrowDown", " ", "k", "j"].includes(event.key)) {
       event.preventDefault();
       event.stopPropagation();
     }
   }
 
   function blockWheel(event) {
+    if (panelRoot?.contains(event.target)) return;
+    if (!hasCourtOverlay() && Date.now() < judgePanelVisibleUntil) {
+      hideTemporaryJudgePanel();
+    }
+
+    if (!hasCourtOverlay()) {
+      unlockScroll();
+      return;
+    }
     if (overlayActive) {
       event.preventDefault();
       event.stopPropagation();
     }
+  }
+
+  function startScrollUnlockWatchdog() {
+    setInterval(() => {
+      const bodyLocked = document.body.style.overflow || document.body.style.overflowY;
+      const htmlLocked = document.documentElement.style.overflow || document.documentElement.style.overflowY;
+      if (!hasCourtOverlay() && (overlayActive || bodyLocked || htmlLocked)) {
+        unlockScroll();
+      }
+    }, 300);
+  }
+
+  function keepPanelScrollInsideCourt(event) {
+    event.stopPropagation();
+  }
+
+  function hideTemporaryJudgePanel() {
+    if (!judgePanelVisibleUntil && !judgePanelShouldPop) return;
+    judgePanelVisibleUntil = 0;
+    judgePanelShouldPop = false;
+    if (judgePanelTimer) clearTimeout(judgePanelTimer);
+    judgePanelTimer = null;
+    render();
+  }
+
+  function showTemporaryJudgePanel(durationMs = 3600) {
+    judgePanelVisibleUntil = Date.now() + durationMs;
+    judgePanelShouldPop = true;
+    if (judgePanelTimer) clearTimeout(judgePanelTimer);
+    judgePanelTimer = setTimeout(() => {
+      judgePanelVisibleUntil = 0;
+      judgePanelTimer = null;
+      judgePanelShouldPop = false;
+      render();
+    }, durationMs);
   }
 
   async function dismissOverlay(overlay) {
@@ -384,18 +739,57 @@
   }
 
   function dismissOverlayWithoutEvaluation(overlay) {
-    overlay.remove();
+    overlay?.remove();
     unlockScroll();
     resumeVideoAfterCourt();
     render();
   }
 
-  async function skipJudgmentWithoutEvaluation(overlay) {
+  async function markJudgmentReviewed() {
     await storageSet({
       lastQuizAt: FEEDBACK_TEST_EVERY_SHORT ? state.watchedCount : state.nextJudgmentAt
     });
     await scheduleNextJudgment();
+  }
+
+  async function dismissWeakEvidenceJudgment(overlay) {
+    await markJudgmentReviewed();
     dismissOverlayWithoutEvaluation(overlay);
+  }
+
+  async function dismissUnavailableQuizJudgment(overlay, evidence) {
+    await markJudgmentReviewed();
+    fillQuizUnavailableOverlay(overlay, evidence);
+  }
+
+  function fillQuizUnavailableOverlay(overlay, evidence) {
+    const modal = overlay.querySelector(".sc-modal");
+    const statsEl = modal?.querySelector(".sc-modal-stats");
+    if (!modal || !statsEl) return dismissOverlayWithoutEvaluation(overlay);
+    modal.querySelector(".sc-modal-loading")?.remove();
+
+    const meta = getEvidenceStrengthMeta(evidence?.evidenceStrength || "weak");
+
+    const badge = document.createElement("div");
+    badge.className = `sc-evidence-pill sc-evidence-${meta.value}`;
+    badge.textContent = `Evidence strength: ${meta.label}`;
+    modal.insertBefore(badge, statsEl);
+
+    const message = document.createElement("p");
+    message.className = "sc-modal-question";
+    message.textContent = "Court recess: the evidence was admissible, but the clerk could not prepare a fair question.";
+    modal.insertBefore(message, statsEl);
+
+    const button = document.createElement("button");
+    button.className = "sc-modal-answer";
+    button.type = "button";
+    button.textContent = "Dismiss summons";
+    button.addEventListener("click", () => dismissOverlayWithoutEvaluation(overlay));
+    modal.insertBefore(button, statsEl);
+
+    setTimeout(() => {
+      if (document.documentElement.contains(overlay)) dismissOverlayWithoutEvaluation(overlay);
+    }, 2200);
   }
 
   function fillLockedOverlay(overlay) {
@@ -448,12 +842,52 @@
           });
         }
 
+        const nextRecallScore = clampWisdom(state.wisdom + (answer.correct ? 15 : -12));
+        const nextWrongStreak = answer.correct ? 0 : (state.wrongStreak || 0) + 1;
+        const selectedEvidence = selectEvidenceForJudgment();
+        const topics = [
+          ...(state.sessionTopics || []),
+          ...(selectedEvidence?.metadataTopics || []),
+          ...(selectedEvidence?.frameTopics || [])
+        ];
+        const feedback = selectFeedbackQuote({
+          correct: answer.correct,
+          wrongStreak: nextWrongStreak,
+          recallScore: nextRecallScore,
+          topics
+        });
+        const feedbackAsset = getFeedbackAsset(feedback, {
+          correct: answer.correct,
+          wrongStreak: nextWrongStreak,
+          recallScore: nextRecallScore
+        });
+        const quoteEl = overlay.querySelector(".sc-modal-quote");
+        if (quoteEl && feedback) {
+          quoteEl.textContent = `${feedback.philosopher}: ${feedback.text}`;
+        }
+        const philosopherEl = overlay.querySelector(".sc-philosopher");
+        if (philosopherEl && feedback) {
+          philosopherEl.outerHTML = getPhilosopherMarkup(feedback.philosopher, feedbackAsset);
+          hideBrokenPhilosopherImage(overlay);
+        }
+
         await storageSet({
-          wisdom: clampWisdom(state.wisdom + (answer.correct ? 15 : -12)),
+          wisdom: nextRecallScore,
           quizCount: state.quizCount + 1,
-          lastQuizAt: FEEDBACK_TEST_EVERY_SHORT ? state.watchedCount : state.nextJudgmentAt
+          lastQuizAt: FEEDBACK_TEST_EVERY_SHORT ? state.watchedCount : state.nextJudgmentAt,
+          lastQuote: feedback?.text || state.lastQuote,
+          lastPhilosopher: feedback?.philosopher || state.lastPhilosopher,
+          lastPhilosopherAsset: feedbackAsset || state.lastPhilosopherAsset,
+          wrongStreak: nextWrongStreak
         });
         await scheduleNextJudgment();
+        showTemporaryJudgePanel();
+
+        if (!answer.correct && nextWrongStreak === 3) {
+          setTimeout(() => {
+            triggerJumpscare(state.watchedCount + state.quizCount + nextWrongStreak);
+          }, 120);
+        }
 
         setTimeout(() => {
           overlay.remove();
@@ -545,6 +979,8 @@
     lockScroll();
     pauseActiveVideoForCourt();
     quizFetchInProgress = true;
+    const pendingEvidence = selectEvidenceForJudgment();
+    const pendingEvidenceMeta = getEvidenceStrengthMeta(pendingEvidence?.evidenceStrength || "weak");
     const overlay = document.createElement("div");
     overlay.id = "sc-overlay";
     overlay.innerHTML = `
@@ -553,19 +989,17 @@
         <div class="sc-modal-badge">Scroll Court Cross-Examination</div>
         <p class="sc-modal-quote">${state.lastQuote || getRandomQuote()}</p>
         <p class="sc-modal-loading">The court is reviewing captions, frame evidence, and metadata...</p>
-        <p class="sc-modal-stats">Shorts: ${state.watchedCount} | Wisdom: ${state.wisdom} | ${getRank(state.wisdom)}</p>
+        <p class="sc-modal-stats">Shorts: ${state.watchedCount} | Recall: ${state.wisdom} | Evidence: ${pendingEvidenceMeta.label}</p>
       </div>
     `;
     document.documentElement.appendChild(overlay);
-    overlay.querySelector(".sc-philosopher-img")?.addEventListener("error", (event) => {
-      event.currentTarget.style.display = "none";
-    });
+    hideBrokenPhilosopherImage(overlay);
 
     try {
-      const selectedEvidence = selectEvidenceForJudgment();
+      const selectedEvidence = pendingEvidence;
 
       if (!hasEvidenceForQuiz(selectedEvidence)) {
-        await skipJudgmentWithoutEvaluation(overlay);
+        await dismissWeakEvidenceJudgment(overlay);
         return;
       }
 
@@ -591,10 +1025,10 @@
       ) {
         fillQuizInOverlay(overlay, response.data);
       } else {
-        await skipJudgmentWithoutEvaluation(overlay);
+        await dismissUnavailableQuizJudgment(overlay, selectedEvidence);
       }
     } catch {
-      await skipJudgmentWithoutEvaluation(overlay);
+      await dismissUnavailableQuizJudgment(overlay, selectEvidenceForJudgment());
     } finally {
       quizFetchInProgress = false;
     }
@@ -607,42 +1041,84 @@
       return;
     }
 
+    const hasJudgeFeedback = Boolean(
+      state.lastQuote &&
+      state.lastPhilosopher &&
+      Date.now() < judgePanelVisibleUntil
+    );
+    const shouldPopJudgePanel = hasJudgeFeedback && judgePanelShouldPop;
+    if (shouldPopJudgePanel) {
+      judgePanelShouldPop = false;
+    }
     const quote = state.lastQuote || QUOTES[state.watchedCount % QUOTES.length];
     const topics = (state.sessionTopics || []).length
       ? state.sessionTopics.join(", ")
       : "evidence pending";
     const evidenceStrength = selectEvidenceForJudgment()?.evidenceStrength || "weak";
-    const receiptNudge = state.watchedCount >= 10 || state.quizCount >= 2;
+    const evidenceMeta = getEvidenceStrengthMeta(evidenceStrength);
+    const courtMood = getCourtMood(state.wisdom);
 
     panelRoot.innerHTML = `
-      <section class="sc-panel ${state.enabled ? "" : "sc-closed"}" aria-label="Scroll Court panel">
-        <header class="sc-header">
-          <div class="sc-title">
-            <strong>Scroll Court</strong>
-            <span>${state.enabled ? "Court is in session" : "Court dismissed"}</span>
+      <div class="sc-court-shell ${state.enabled ? "" : "sc-closed"}">
+        ${hasJudgeFeedback ? `<section class="sc-panel sc-panel-left ${shouldPopJudgePanel ? "sc-panel-pop" : ""}" aria-label="Scroll Court judge">
+          <header class="sc-header">
+            <div class="sc-header-mark">
+              <div class="sc-title">
+                <strong>Scroll Court</strong>
+                <span>${state.enabled ? "Court is in session" : "Court dismissed"}</span>
+              </div>
+            </div>
+            <button class="sc-icon-button" id="sc-toggle" type="button" title="${state.enabled ? "Collapse panels" : "Open panels"}">${state.enabled ? "-" : "+"}</button>
+          </header>
+          <div class="sc-body">
+            <div class="sc-judge-stage">
+              ${getPhilosopherMarkup(state.lastPhilosopher, state.lastPhilosopherAsset, "sc-philosopher-judge")}
+            </div>
+            <div class="sc-wisdom-hero">
+              <span>Recall Score</span>
+              <strong>${state.wisdom}</strong>
+              <p>${courtMood}</p>
+            </div>
+            <div class="sc-quote">
+              <span>The judge whispers</span>
+              <p>${quote}</p>
+            </div>
+            <p class="sc-panel-line">${state.sessionEnded ? "Session ended. Receipt is ready for the archive." : getSummonsCopy()}</p>
           </div>
-          <button class="sc-icon-button" id="sc-toggle" type="button" title="${state.enabled ? "Collapse panel" : "Open panel"}">${state.enabled ? "-" : "+"}</button>
-        </header>
-        <div class="sc-body">
-          <div class="sc-stats">
-            <div class="sc-stat"><span>Shorts</span><strong>${state.watchedCount}</strong></div>
-            <div class="sc-stat"><span>Wisdom</span><strong>${state.wisdom}</strong></div>
-            <div class="sc-stat"><span>Rank</span><strong>${getRank(state.wisdom)}</strong></div>
+        </section>` : ""}
+
+        <aside class="sc-panel sc-panel-right" aria-label="Scroll Court case file">
+          <header class="sc-side-header">
+            <strong>Case File</strong>
+            <span>Session evidence</span>
+          </header>
+          <div class="sc-body">
+            <div class="sc-recall-card">
+              <div>
+                <span>Recall Score</span>
+                <strong>${state.wisdom}/100</strong>
+              </div>
+              <p>${courtMood}</p>
+            </div>
+            <div class="sc-session-row">
+              <div><span>Shorts watched</span><strong>${state.watchedCount}</strong></div>
+              <div><span>Trials survived</span><strong>${state.quizCount}</strong></div>
+            </div>
+            <div class="sc-evidence-card sc-evidence-${evidenceMeta.value}">
+              <div class="sc-evidence-row">
+                <span>Evidence strength</span>
+                <strong>${evidenceMeta.label}</strong>
+              </div>
+              <p>${evidenceMeta.verdict}. ${evidenceMeta.detail}</p>
+            </div>
+            <div class="sc-actions">
+              <button class="sc-button" id="sc-end-session" type="button">End Session</button>
+              <button class="sc-button sc-secondary" id="sc-reset" type="button">Reset</button>
+            </div>
+            <div class="sc-receipt" id="sc-receipt"></div>
           </div>
-          <div class="sc-quote">${quote}</div>
-          <p class="sc-muted">Wisdom is your session score for surviving court interrogations.</p>
-          <p class="sc-muted">Uses captions, visible-frame analysis, and session metadata.</p>
-          ${FEEDBACK_TEST_EVERY_SHORT ? '<p class="sc-muted">Feedback test mode: summons appears on every Short.</p>' : ""}
-          ${receiptNudge && !state.sessionEnded ? '<p class="sc-muted">The court has enough evidence for a receipt.</p>' : ""}
-          <p class="sc-muted">${state.sessionEnded ? "Session ended. Receipt is ready for the archive." : getSummonsCopy()}</p>
-          <p class="sc-muted">Evidence collected: ${topics} (${evidenceStrength})</p>
-          <div class="sc-actions">
-            <button class="sc-button" id="sc-end-session" type="button">End Session</button>
-            <button class="sc-button sc-secondary" id="sc-reset" type="button">Reset</button>
-          </div>
-          <div class="sc-receipt" id="sc-receipt"></div>
-        </div>
-      </section>
+        </aside>
+      </div>
     `;
 
     panelRoot.querySelector("#sc-toggle")?.addEventListener("click", async () => {
@@ -663,14 +1139,22 @@
         recentEvidence: [],
         sessionTopics: [],
         lastQuote: "",
+        lastPhilosopher: "",
+        lastPhilosopherAsset: "",
+        wrongStreak: 0,
         sessionEnded: false,
         lastShortUrl: isShortsUrl() ? location.href : ""
       });
+      judgePanelVisibleUntil = 0;
+      if (judgePanelTimer) clearTimeout(judgePanelTimer);
+      judgePanelTimer = null;
+      judgePanelShouldPop = false;
       await scheduleNextJudgment();
       render();
     });
 
     panelRoot.querySelector("#sc-end-session")?.addEventListener("click", endSession);
+    hideBrokenPhilosopherImage(panelRoot);
   }
 
   async function endSession() {
@@ -689,7 +1173,7 @@
           demoPassword: state.demoPassword,
           watchedCount: state.watchedCount,
           wisdom: state.wisdom,
-          rank: getRank(state.wisdom),
+          courtMood: getCourtMood(state.wisdom),
           quizCount: state.quizCount,
           recentEvidence: state.recentEvidence || [],
           sessionTopics: state.sessionTopics || [],
@@ -783,7 +1267,9 @@
   }
 
   async function init() {
-    if (document.getElementById("scroll-court-root")) return;
+    document.getElementById("scroll-court-root")?.remove();
+    document.getElementById("sc-overlay")?.remove();
+    unlockScroll();
 
     const storedState = await storageGet();
     state = {
@@ -797,6 +1283,9 @@
       recentEvidence: [],
       sessionTopics: [],
       lastQuote: "",
+      lastPhilosopher: "",
+      lastPhilosopherAsset: "",
+      wrongStreak: 0,
       sessionEnded: false
     };
     await storageSet(state);
@@ -807,6 +1296,8 @@
     panelRoot = document.createElement("div");
     panelRoot.id = "scroll-court-root";
     document.documentElement.appendChild(panelRoot);
+    panelRoot.addEventListener("wheel", keepPanelScrollInsideCourt, { capture: true, passive: true });
+    panelRoot.addEventListener("touchmove", keepPanelScrollInsideCourt, { capture: true, passive: true });
 
     document.addEventListener("keydown", blockNavKeys, true);
     document.addEventListener("wheel", blockWheel, { capture: true, passive: false });
@@ -816,6 +1307,7 @@
     handleCurrentShort();
     watchUrlChanges();
     setInterval(collectCaptions, 1000);
+    startScrollUnlockWatchdog();
 
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== "local" || !changes[STORAGE_KEY]) return;

@@ -15,21 +15,19 @@ const defaultState = {
   sessionTopics: [],
   roastIntensity: "medium",
   lastQuote: "",
+  lastPhilosopher: "",
+  wrongStreak: 0,
   sessionEnded: false
 };
 
-const ranks = [
-  { min: 90, name: "Oracle of Restraint" },
-  { min: 70, name: "Stoic Swipe Survivor" },
-  { min: 50, name: "Apprentice Philosopher" },
-  { min: 25, name: "Court Jester of Focus" },
-  { min: -999, name: "Doomscroll Defendant" }
-];
-
 let state = { ...defaultState };
 
-function getRank(wisdom) {
-  return ranks.find((rank) => wisdom >= rank.min).name;
+function getCourtMood(wisdom) {
+  if (wisdom >= 85) return "Impressed";
+  if (wisdom >= 65) return "Cautiously hopeful";
+  if (wisdom >= 45) return "Watching closely";
+  if (wisdom >= 25) return "Deeply suspicious";
+  return "Preparing charges";
 }
 
 function storageGet() {
@@ -50,7 +48,7 @@ function storageSet(nextState) {
 function render() {
   document.querySelector("#watched").textContent = String(state.watchedCount);
   document.querySelector("#wisdom").textContent = String(state.wisdom);
-  document.querySelector("#rank").textContent = getRank(state.wisdom);
+  document.querySelector("#court-mood").textContent = getCourtMood(state.wisdom);
   document.querySelector("#quiz-count").textContent = String(state.quizCount);
   document.querySelector("#toggle").textContent = state.enabled ? "Interruptions On" : "Interruptions Off";
   document.querySelector("#api-base").value = state.apiBase || DEFAULT_API_BASE;
@@ -104,6 +102,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       recentEvidence: [],
       sessionTopics: [],
       lastQuote: "",
+      lastPhilosopher: "",
+      wrongStreak: 0,
       sessionEnded: false
     });
 

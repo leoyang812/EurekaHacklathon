@@ -1,6 +1,6 @@
 # Scroll Court
 
-Scroll Court is a Chrome extension and landing site for interrupting YouTube Shorts doomscrolling with comedy, attention checks, Wisdom Rating changes, and a final philosopher roast receipt.
+Scroll Court is a Chrome extension and landing site for interrupting YouTube Shorts doomscrolling with comedy, attention checks, Recall Score changes, and a final philosopher roast receipt.
 
 ## Local Setup
 
@@ -69,7 +69,7 @@ Expected JSON:
   "demoPassword": "your_demo_password",
   "watchedCount": 12,
   "wisdom": 38,
-  "rank": "Court Jester of Focus",
+  "courtMood": "Deeply suspicious",
   "quizCount": 4
 }
 ```

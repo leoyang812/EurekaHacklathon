@@ -26,7 +26,7 @@ type ReceiptRequest = {
   demoPassword?: string;
   watchedCount?: number;
   wisdom?: number;
-  rank?: string;
+  courtMood?: string;
   quizCount?: number;
   recentEvidence?: EvidenceItem[];
   sessionTopics?: string[];
@@ -36,7 +36,7 @@ type ReceiptRequest = {
 type ReceiptInput = {
   watchedCount: number;
   wisdom: number;
-  rank: string;
+  courtMood: string;
   quizCount: number;
   recentEvidence: EvidenceItem[];
   sessionTopics: string[];
@@ -107,7 +107,7 @@ function fallbackReceipt(input: ReceiptInput) {
     "SCROLL COURT RECEIPT",
     `Charges: ${input.watchedCount} Shorts entered into evidence.`,
     `Evidence: ${topics}.`,
-    `Wisdom Damage: ${input.wisdom}/100, rank ${input.rank}.`,
+    `Recall Score: ${input.wisdom}/100. Court mood: ${input.courtMood}.`,
     `Judgments Survived: ${input.quizCount}.`,
     "",
     "Philosopher Verdict: Socrates asked what you learned. The record shows silence and a suspiciously tired thumb.",
@@ -163,7 +163,7 @@ export async function POST(request: Request) {
   const receiptInput: ReceiptInput = {
     watchedCount: clampNumber(body.watchedCount, 0, MAX_SHORTS, 0),
     wisdom: clampNumber(body.wisdom, 0, 100, 50),
-    rank: cleanString(body.rank, 40) || "Doomscroll Defendant",
+    courtMood: cleanString(body.courtMood, 40) || "Watching closely",
     quizCount: clampNumber(body.quizCount, 0, MAX_SHORTS, 0),
     recentEvidence,
     sessionTopics,
@@ -202,7 +202,7 @@ ${JSON.stringify(receiptInput)}
 Use this format:
 Charges
 Evidence
-Wisdom Damage
+Recall Score
 Philosopher Verdict
 Sentence
 

@@ -24,7 +24,7 @@ const features = [
   {
     icon: Brain,
     title: "Attention Quizzes",
-    text: "Every third Short triggers a quick, funny self-check that updates the user's Wisdom Rating."
+    text: "Every third Short triggers a quick, funny self-check that updates the user's Recall Score."
   },
   {
     icon: ReceiptText,
@@ -86,8 +86,8 @@ export default function HomePage() {
               <div className="grid grid-cols-3 gap-2">
                 {[
                   ["Shorts", "12"],
-                  ["Wisdom", "38"],
-                  ["Rank", "Court Jester"]
+                  ["Recall", "38"],
+                  ["Mood", "Suspicious"]
                 ].map(([label, value]) => (
                   <div
                     className="rounded-md border border-white/10 bg-white/5 p-3"

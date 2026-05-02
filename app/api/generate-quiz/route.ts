@@ -254,7 +254,7 @@ ${JSON.stringify(selectedEvidence)}
 
 Session topics: ${JSON.stringify(body.sessionTopics ?? [])}
 Watched count: ${typeof body.watchedCount === "number" ? body.watchedCount : 0}
-Wisdom score: ${typeof body.wisdom === "number" ? body.wisdom : 50}
+Recall score: ${typeof body.wisdom === "number" ? body.wisdom : 50}
 Roast intensity: ${typeof body.roastIntensity === "string" ? body.roastIntensity : "medium"}`
         }
       ]
