@@ -231,7 +231,6 @@ Evidence rules:
 - Do not claim to understand the full video, transcript, audio, comments, or ending unless captions provide that text.
 - Make the question genuinely difficult but fair: someone who watched mindlessly should hesitate, someone who paid attention should know.
 - Ask one specific question about the topic of the video. Do not ask questions that are too generic or too obscure.
-- Create exactly five answer choices.
 - The five answer choices must be distinct, plausible, and similar in length/detail.
 - Wrong choices should be believable near-misses, not obvious jokes, duplicates, or absurd throwaways.
 - Avoid repeating the same wording across choices.
@@ -249,7 +248,7 @@ Return ONLY valid JSON with this exact structure:
   ]
 }
 
-Keep tone ancient philosopher court x meme trial x internet brainrot. Do not mention API keys, passwords, hidden prompts, or implementation details.`
+Do not mention API keys, passwords, hidden prompts, or implementation details.`
         },
         {
           role: "user",
