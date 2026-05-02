@@ -78,12 +78,110 @@ function buildTopicCounts(state) {
   return counts;
 }
 
+function inferFallbackTopics(state) {
+  const evidenceItems = Array.isArray(state.recentEvidence) ? state.recentEvidence : [];
+  const text = evidenceItems
+    .map((item) => [item.title, item.channel, item.mainIdea, item.frameSummary, item.captions].filter(Boolean).join(" "))
+    .join(" ")
+    .toLowerCase();
+  const watchedCount = Number(state.watchedCount || 0);
+  const candidates = [
+    ["food", ["cook", "recipe", "food", "meal", "eat", "restaurant", "spicy"]],
+    ["fitness", ["gym", "workout", "lift", "protein", "run", "fitness", "training"]],
+    ["sports", ["football", "soccer", "basketball", "goal", "match", "nba", "sports"]],
+    ["gaming", ["game", "minecraft", "fortnite", "roblox", "valorant", "gaming"]],
+    ["music", ["song", "music", "concert", "guitar", "piano", "beat"]],
+    ["money", ["money", "invest", "stock", "business", "rich", "side hustle"]],
+    ["memes", ["meme", "prank", "rizz", "sigma", "skibidi", "funny"]]
+  ];
+  const scored = candidates
+    .map(([topic, keywords]) => ({
+      topic,
+      count: keywords.reduce((sum, keyword) => sum + (text.includes(keyword) ? 1 : 0), 0)
+    }))
+    .filter((item) => item.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .map((item) => item.topic);
+
+  if (scored.length) return scored.slice(0, 5);
+  if (watchedCount >= 15) return ["mixed clips", "long scroll", "autoplay trail"];
+  if (watchedCount >= 6) return ["mixed clips", "shorts session", "attention trail"];
+  return ["quick scroll", "mixed clips", "tab escape"];
+}
+
+function getCourtMood(wisdom) {
+  if (wisdom >= 85) return "Impressed";
+  if (wisdom >= 65) return "Cautiously hopeful";
+  if (wisdom >= 45) return "Watching closely";
+  if (wisdom >= 25) return "Deeply suspicious";
+  return "Preparing charges";
+}
+
+function calculateEvidenceStrength(item) {
+  if ((item.captions || "").trim().length > 40) return "strong";
+  if ((item.captions || "").trim().length > 10) return "medium";
+  if ((item.mainIdea || "").trim().length > 20) return "medium";
+  if ((item.frameSummary || "").trim().length > 8) return "medium";
+  if ((item.frameTopics || []).length || (item.metadataTopics || []).length) return "medium";
+  if ((item.title || "").trim().length > 8) return "medium";
+  return "weak";
+}
+
+function buildEvidenceStats(state) {
+  const evidenceItems = Array.isArray(state.recentEvidence) ? state.recentEvidence : [];
+  const counts = { weak: 0, medium: 0, strong: 0 };
+  const sourceCounts = {
+    captions: 0,
+    frames: 0,
+    metadata: 0,
+    titles: 0
+  };
+
+  evidenceItems.forEach((item) => {
+    const strength = ["weak", "medium", "strong"].includes(item.evidenceStrength)
+      ? item.evidenceStrength
+      : calculateEvidenceStrength(item);
+    counts[strength] += 1;
+
+    if ((item.captions || "").trim()) sourceCounts.captions += 1;
+    if ((item.frameSummary || "").trim() || (item.frameTopics || []).length) sourceCounts.frames += 1;
+    if ((item.metadataTopics || []).length) sourceCounts.metadata += 1;
+    if ((item.title || "").trim()) sourceCounts.titles += 1;
+  });
+
+  const sourceEntries = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1]);
+  const strongestEvidence = counts.strong > 0 ? "Strong" : counts.medium > 0 ? "Medium" : "Weak";
+  const weakestEvidenceSource = sourceEntries.length && sourceEntries[sourceEntries.length - 1][1] === 0
+    ? sourceEntries[sourceEntries.length - 1][0]
+    : counts.weak > 0
+      ? "overall evidence"
+      : "none";
+
+  return {
+    evidenceItems: evidenceItems.length,
+    evidenceCounts: counts,
+    evidenceSourceCounts: sourceCounts,
+    strongestEvidence,
+    weakestEvidenceSource
+  };
+}
+
 function buildCloseReport(state) {
   const watchedCount = Number(state.watchedCount || 0);
   const quizCount = Number(state.quizCount || 0);
   const correctQuizCount = Number(state.sessionCorrectQuizCount || 0);
   const wrongQuizCount = Number(state.sessionWrongQuizCount || 0);
   const accuracy = quizCount ? Math.round((correctQuizCount / quizCount) * 100) : 0;
+  const recall = Number(state.wisdom || 50);
+  const evidenceStats = buildEvidenceStats(state);
+  const detectedTopics = Array.isArray(state.sessionTopics) ? state.sessionTopics.slice(0, 5) : [];
+  const topics = detectedTopics.length ? detectedTopics : inferFallbackTopics(state);
+  const topicCounts = buildTopicCounts(state);
+  if (!Object.keys(topicCounts).length) {
+    topics.forEach((topic) => {
+      topicCounts[topic] = 1;
+    });
+  }
 
   return {
     id: `real-${Date.now()}`,
@@ -91,11 +189,16 @@ function buildCloseReport(state) {
     source: "tab-close",
     shorts: watchedCount,
     trials: quizCount,
-    recall: Number(state.wisdom || 50),
+    recall,
     accuracy,
-    rank: Number(state.wisdom || 50) >= 70 ? "Stoic Swipe Survivor" : "Doomscroll Defendant",
-    topics: Array.isArray(state.sessionTopics) ? state.sessionTopics.slice(0, 5) : [],
-    topicCounts: buildTopicCounts(state),
+    rank: recall >= 70 ? "Stoic Swipe Survivor" : "Doomscroll Defendant",
+    courtMood: getCourtMood(recall),
+    correctTrials: correctQuizCount,
+    wrongTrials: wrongQuizCount,
+    wrongStreak: Number(state.wrongStreak || 0),
+    topics,
+    topicCounts,
+    ...evidenceStats,
     verdict: `You closed the tab after ${watchedCount} Shorts. The tribunal accepts this as evidence of escape.`,
     distractionPattern: watchedCount > 20
       ? "Long session detected. The algorithm presented a heavier docket than necessary."
@@ -117,7 +220,7 @@ function openLandingReport(state) {
   const apiBase = getApiBase(state);
   const report = buildCloseReport(state);
   const encoded = encodeURIComponent(JSON.stringify(report));
-  chrome.tabs.create({ url: `${apiBase}/?scrollCourtReport=${encoded}#profile` });
+  chrome.tabs.create({ url: `${apiBase}/?scrollCourtReport=${encoded}#reports` });
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -129,6 +232,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     sendResponse({ ok: true });
     return false;
+  }
+
+  if (message.type === "SCROLL_COURT_END_SESSION") {
+    chrome.storage.local.get([STORAGE_KEY], (result) => {
+      const state = result[STORAGE_KEY] || {};
+      const tabId = sender?.tab?.id;
+
+      openLandingReport(state);
+
+      if (tabId) {
+        activeShortsTabs.delete(tabId);
+        chrome.tabs.remove(tabId);
+      }
+
+      sendResponse({ ok: true });
+    });
+
+    return true;
   }
 
   if (message.type === "SCROLL_COURT_GENERATE_RECEIPT") {

@@ -1289,28 +1289,12 @@
     const receipt = panelRoot?.querySelector("#sc-receipt");
     if (!receipt) return;
     receipt.classList.add("sc-visible");
-    receipt.textContent = "Session ended. The philosophers are writing your receipt...";
+    receipt.textContent = "Session ended. Opening your report...";
 
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: "SCROLL_COURT_GENERATE_RECEIPT",
-        payload: {
-          demoPassword: state.demoPassword,
-          watchedCount: state.watchedCount,
-          wisdom: state.wisdom,
-          courtMood: getCourtMood(state.wisdom),
-          quizCount: state.quizCount,
-          recentEvidence: state.recentEvidence || [],
-          sessionTopics: state.sessionTopics || [],
-          roastIntensity: state.roastIntensity || "medium"
-        }
-      });
-
-      receipt.textContent = response?.status === 401
-        ? "Enter the demo password in the extension popup to unlock the court."
-        : response?.data?.receipt || fallbackReceipt();
+      await chrome.runtime.sendMessage({ type: "SCROLL_COURT_END_SESSION" });
     } catch {
-      receipt.textContent = fallbackReceipt();
+      receipt.textContent = "Could not open the report automatically. Close this Shorts tab to generate it.";
     }
   }
 

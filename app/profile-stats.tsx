@@ -22,8 +22,17 @@ type SessionReport = {
   recall: number;
   accuracy?: number;
   rank: string;
+  courtMood?: string;
+  correctTrials?: number;
+  wrongTrials?: number;
+  wrongStreak?: number;
   topics: string[];
   topicCounts?: Record<string, number>;
+  evidenceItems?: number;
+  evidenceCounts?: Record<string, number>;
+  evidenceSourceCounts?: Record<string, number>;
+  strongestEvidence?: string;
+  weakestEvidenceSource?: string;
   verdict: string;
   distractionPattern: string;
   productivityAction: string;
@@ -214,6 +223,47 @@ function formatTopicCounts(report: SessionReport) {
     : "evidence unclassified";
 }
 
+function cleanNumber(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function cleanCountRecord(value: unknown) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? Object.fromEntries(
+        Object.entries(value)
+          .filter(([key, count]) => typeof key === "string" && typeof count === "number")
+          .slice(0, 8)
+      )
+    : undefined;
+}
+
+function formatEvidenceCounts(report: SessionReport) {
+  const counts = report.evidenceCounts || {};
+  const weak = cleanNumber(counts.weak);
+  const medium = cleanNumber(counts.medium);
+  const strong = cleanNumber(counts.strong);
+
+  if (!weak && !medium && !strong) return "no evidence file";
+  return `${strong} strong / ${medium} medium / ${weak} weak`;
+}
+
+function getReceiptStatRows(report: SessionReport) {
+  return [
+    ["Court mood", report.courtMood || "Watching closely"],
+    ["Rank", report.rank],
+    ["Correct trials", cleanNumber(report.correctTrials)],
+    ["Wrong trials", cleanNumber(report.wrongTrials)],
+    ["Wrong streak", cleanNumber(report.wrongStreak)],
+    ["Evidence items", cleanNumber(report.evidenceItems)],
+    ["Evidence quality", formatEvidenceCounts(report)],
+    ["Strongest evidence", report.strongestEvidence || "Weak"],
+    ["Weakest source", report.weakestEvidenceSource || "unknown"],
+    ["Lifetime shorts", cleanNumber((report as SessionReport & Partial<ProfileStats>).totalShorts, report.shorts)],
+    ["Lifetime trials", cleanNumber((report as SessionReport & Partial<ProfileStats>).totalTrials, report.trials)],
+    ["Best recall", `${cleanNumber((report as SessionReport & Partial<ProfileStats>).bestRecall, report.recall)}/100`]
+  ];
+}
+
 function escapeXml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -316,14 +366,17 @@ export function ProfileStatsPanel() {
         recall: Number(parsed.recall || 50),
         accuracy: typeof parsed.accuracy === "number" ? clampAccuracy(parsed.accuracy) : undefined,
         rank: typeof parsed.rank === "string" ? parsed.rank : "Doomscroll Defendant",
+        courtMood: typeof parsed.courtMood === "string" ? parsed.courtMood : undefined,
+        correctTrials: cleanNumber(parsed.correctTrials),
+        wrongTrials: cleanNumber(parsed.wrongTrials),
+        wrongStreak: cleanNumber(parsed.wrongStreak),
         topics: Array.isArray(parsed.topics) ? parsed.topics.slice(0, 5) : [],
-        topicCounts: parsed.topicCounts && typeof parsed.topicCounts === "object" && !Array.isArray(parsed.topicCounts)
-          ? Object.fromEntries(
-              Object.entries(parsed.topicCounts)
-                .filter(([topic, count]) => typeof topic === "string" && typeof count === "number")
-                .slice(0, 8)
-            )
-          : undefined,
+        topicCounts: cleanCountRecord(parsed.topicCounts),
+        evidenceItems: cleanNumber(parsed.evidenceItems),
+        evidenceCounts: cleanCountRecord(parsed.evidenceCounts),
+        evidenceSourceCounts: cleanCountRecord(parsed.evidenceSourceCounts),
+        strongestEvidence: typeof parsed.strongestEvidence === "string" ? parsed.strongestEvidence : undefined,
+        weakestEvidenceSource: typeof parsed.weakestEvidenceSource === "string" ? parsed.weakestEvidenceSource : undefined,
         verdict: typeof parsed.verdict === "string" ? parsed.verdict : "The court received a closed-tab report.",
         distractionPattern: typeof parsed.distractionPattern === "string"
           ? parsed.distractionPattern
@@ -352,7 +405,10 @@ export function ProfileStatsPanel() {
         wrongAnswers: Number(parsed.wrongAnswers || 0),
         bestRecall: Math.max(current.bestRecall, Number(parsed.bestRecall || report.recall || 50))
       }));
-      window.history.replaceState({}, "", `${window.location.pathname}#profile`);
+      window.history.replaceState({}, "", `${window.location.pathname}#reports`);
+      window.setTimeout(() => {
+        document.getElementById("reports")?.scrollIntoView({ block: "start" });
+      }, 0);
     } catch {
       // Ignore malformed report URLs.
     }
@@ -525,7 +581,7 @@ export function ProfileStatsPanel() {
       </div>
 
       {showReports ? (
-        <div className="mx-auto mt-6 w-full max-w-6xl px-5 md:px-8">
+        <div id="reports" className="mx-auto mt-6 w-full max-w-6xl scroll-mt-6 px-5 md:px-8">
           <div className="rounded-lg border border-slate-400/20 bg-slate-900/80 shadow-2xl shadow-black/40">
             <div className="flex items-center justify-between border-b border-slate-400/15 px-5 py-4">
               <div>
@@ -579,6 +635,17 @@ export function ProfileStatsPanel() {
                         <p className="mt-2 text-sm leading-6 text-stone-200">
                           {formatTopicCounts(latestReport)}
                         </p>
+                      </div>
+                      <div className="rounded-lg border border-stone-500/20 bg-black/35 p-4">
+                        <p className="text-xs font-black uppercase text-amber-100">Receipt stats</p>
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          {getReceiptStatRows(latestReport).map(([label, value]) => (
+                            <div className="rounded-md bg-white/[0.04] p-3" key={label}>
+                              <p className="text-xs text-stone-400">{label}</p>
+                              <p className="mt-1 text-sm font-black text-white">{value}</p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <div className="grid gap-4">
@@ -666,6 +733,14 @@ export function ProfileStatsPanel() {
                     <p className="mt-3 text-sm leading-6 text-stone-300">
                       <strong className="text-white">Sentence:</strong> {getReportAction(report)}
                     </p>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {getReceiptStatRows(report).slice(0, 6).map(([label, value]) => (
+                        <div className="rounded-md bg-white/[0.04] p-2" key={label}>
+                          <p className="text-[11px] text-slate-400">{label}</p>
+                          <p className="mt-1 text-xs font-black text-white">{value}</p>
+                        </div>
+                      ))}
+                    </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {getTopicCountEntries(report).map(([topic, count]) => (
                         <span
