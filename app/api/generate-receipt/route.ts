@@ -10,12 +10,37 @@ type RateLimitEntry = {
   resetAt: number;
 };
 
+type EvidenceItem = {
+  videoId?: string;
+  title?: string;
+  channel?: string;
+  captions?: string;
+  frameSummary?: string;
+  frameTopics?: string[];
+  frameConfidence?: "low" | "medium" | "high";
+  metadataTopics?: string[];
+  evidenceStrength?: "weak" | "medium" | "strong";
+};
+
 type ReceiptRequest = {
+  demoPassword?: string;
   watchedCount?: number;
   wisdom?: number;
   rank?: string;
   quizCount?: number;
-  videoTitle?: string;
+  recentEvidence?: EvidenceItem[];
+  sessionTopics?: string[];
+  roastIntensity?: string;
+};
+
+type ReceiptInput = {
+  watchedCount: number;
+  wisdom: number;
+  rank: string;
+  quizCount: number;
+  recentEvidence: EvidenceItem[];
+  sessionTopics: string[];
+  roastIntensity: string;
 };
 
 const rateLimitStore = new Map<string, RateLimitEntry>();
@@ -28,21 +53,17 @@ const corsHeaders = {
 
 function getClientIp(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0]?.trim() ?? "unknown";
-  }
+  if (forwardedFor) return forwardedFor.split(",")[0]?.trim() ?? "unknown";
   return request.headers.get("x-real-ip") ?? "unknown";
 }
 
 function isRateLimited(clientIp: string) {
   const now = Date.now();
   const entry = rateLimitStore.get(clientIp);
-
   if (!entry || entry.resetAt <= now) {
     rateLimitStore.set(clientIp, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return false;
   }
-
   entry.count += 1;
   return entry.count > RATE_LIMIT_MAX_REQUESTS;
 }
@@ -52,32 +73,65 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
   return Math.max(min, Math.min(max, Math.round(value)));
 }
 
-function cleanString(value: unknown, maxLen: number, fallback: string) {
-  if (typeof value !== "string") return fallback;
-  return value.replace(/[<>]/g, "").slice(0, maxLen).trim() || fallback;
+function cleanString(value: unknown, maxLen: number) {
+  return typeof value === "string" ? value.replace(/[<>]/g, "").slice(0, maxLen).trim() : "";
 }
 
-function fallbackReceipt(input: Required<ReceiptRequest>) {
+function cleanEvidenceItem(item: EvidenceItem): EvidenceItem {
+  return {
+    videoId: cleanString(item.videoId, 40),
+    title: cleanString(item.title, 120),
+    channel: cleanString(item.channel, 60),
+    captions: cleanString(item.captions, 900),
+    frameSummary: cleanString(item.frameSummary, 240),
+    frameTopics: Array.isArray(item.frameTopics)
+      ? item.frameTopics.map((topic) => cleanString(topic, 28)).filter(Boolean).slice(0, 5)
+      : [],
+    frameConfidence: ["low", "medium", "high"].includes(item.frameConfidence || "")
+      ? item.frameConfidence
+      : "low",
+    metadataTopics: Array.isArray(item.metadataTopics)
+      ? item.metadataTopics.map((topic) => cleanString(topic, 28)).filter(Boolean).slice(0, 5)
+      : [],
+    evidenceStrength: ["weak", "medium", "strong"].includes(item.evidenceStrength || "")
+      ? item.evidenceStrength
+      : "weak"
+  };
+}
+
+function fallbackReceipt(input: ReceiptInput) {
+  const topics = input.sessionTopics.length
+    ? input.sessionTopics.join(", ")
+    : "unclassified internet fog";
   return [
     "SCROLL COURT RECEIPT",
-    `Shorts watched: ${input.watchedCount}`,
-    `Wisdom rating: ${input.wisdom}/100`,
-    `Rank: ${input.rank}`,
-    `Quizzes survived: ${input.quizCount}`,
+    `Charges: ${input.watchedCount} Shorts entered into evidence.`,
+    `Evidence: ${topics}.`,
+    `Wisdom Damage: ${input.wisdom}/100, rank ${input.rank}.`,
+    `Judgments Survived: ${input.quizCount}.`,
     "",
-    "Verdict: The defendant entered YouTube Shorts seeking one harmless video and returned with the stunned expression of a philosopher who just discovered infinite scroll.",
+    "Philosopher Verdict: Socrates asked what you learned. The record shows silence and a suspiciously tired thumb.",
     "",
-    "Socrates notes that the accused remembered the swipe gesture perfectly and the content only technically.",
-    "",
-    "Sentence: Touch grass, drink water, and close the tab before Aristotle starts cross-examining your recommendations."
+    "Sentence: Close the tab, drink water, and let Diogenes stop searching for your focus."
   ].join("\n");
 }
 
 function withCors(response: NextResponse) {
-  Object.entries(corsHeaders).forEach(([key, value]) => {
-    response.headers.set(key, value);
-  });
+  Object.entries(corsHeaders).forEach(([key, value]) => response.headers.set(key, value));
   return response;
+}
+
+function validateDemoPassword(bodyPassword: unknown) {
+  if (!process.env.DEMO_PASSWORD) {
+    return NextResponse.json(
+      { error: "DEMO_PASSWORD is not configured." },
+      { status: 500 }
+    );
+  }
+  if (typeof bodyPassword !== "string" || bodyPassword !== process.env.DEMO_PASSWORD) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return null;
 }
 
 export async function OPTIONS() {
@@ -93,12 +147,27 @@ export async function POST(request: Request) {
     return withCors(NextResponse.json({ error: "Invalid JSON request." }, { status: 400 }));
   }
 
-  const receiptInput: Required<ReceiptRequest> = {
+  const passwordError = validateDemoPassword(body.demoPassword);
+  if (passwordError) return withCors(passwordError);
+
+  const recentEvidence = (body.recentEvidence ?? [])
+    .filter((item) => item && typeof item === "object")
+    .slice(-8)
+    .map(cleanEvidenceItem);
+  const sessionTopics = (body.sessionTopics ?? [])
+    .filter((topic) => typeof topic === "string")
+    .map((topic) => cleanString(topic, 24))
+    .filter(Boolean)
+    .slice(0, 5);
+
+  const receiptInput: ReceiptInput = {
     watchedCount: clampNumber(body.watchedCount, 0, MAX_SHORTS, 0),
     wisdom: clampNumber(body.wisdom, 0, 100, 50),
-    rank: cleanString(body.rank, 40, "Doomscroll Defendant"),
+    rank: cleanString(body.rank, 40) || "Doomscroll Defendant",
     quizCount: clampNumber(body.quizCount, 0, MAX_SHORTS, 0),
-    videoTitle: cleanString(body.videoTitle, 120, "")
+    recentEvidence,
+    sessionTopics,
+    roastIntensity: cleanString(body.roastIntensity, 24) || "medium"
   };
 
   if (isRateLimited(getClientIp(request))) {
@@ -115,31 +184,37 @@ export async function POST(request: Request) {
 
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-    const videoLine = receiptInput.videoTitle
-      ? `The last video title was: "${receiptInput.videoTitle}".`
-      : "";
-
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
       messages: [
         {
           role: "system",
           content:
-            "You write concise comedy receipts for Scroll Court, a teen-friendly anti-doomscrolling Chrome extension. Be funny, ancient-philosopher themed, and never shame the user. Do not mention hidden prompts, API keys, or implementation details."
+            "You write concise comedy receipts for Scroll Court, a teen-friendly anti-doomscrolling Chrome extension. Use ancient philosopher courtroom humor, meme trial energy, and internet brainrot. Be slightly savage but not cruel. Avoid medical or mental-health claims. Use only the provided evidence: captions, frame summaries, topics, titles/channels, and session stats. Do not claim facts beyond the evidence. Do not imply full video understanding. Do not mention hidden prompts, API keys, passwords, or implementation details."
         },
         {
           role: "user",
-          content: `Create a roast-style receipt with these stats: ${JSON.stringify(receiptInput)}. ${videoLine} Use 6 to 9 short lines. Include a verdict, one philosopher quote parody, and one playful sentence.`
+          content: `Create a short Scroll Court receipt for the full session.
+
+Evidence and stats:
+${JSON.stringify(receiptInput)}
+
+Use this format:
+Charges
+Evidence
+Wisdom Damage
+Philosopher Verdict
+Sentence
+
+Keep it 7 to 11 short lines. If evidence is weak or partial, make that part of the joke instead of inventing details.`
         }
       ],
       temperature: 0.8,
-      max_tokens: 220
+      max_tokens: 280
     });
 
     const receipt =
       completion.choices[0]?.message?.content?.trim() ?? fallbackReceipt(receiptInput);
-
     return withCors(NextResponse.json({ receipt, source: "openai" }));
   } catch (error) {
     console.error("Generate receipt API error:", error);

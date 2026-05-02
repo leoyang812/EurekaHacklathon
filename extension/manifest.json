@@ -3,7 +3,7 @@
   "name": "Scroll Court",
   "version": "0.1.0",
   "description": "Ancient philosophers judge your YouTube Shorts autopilot loop.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "activeTab"],
   "host_permissions": [
     "https://www.youtube.com/*",
     "http://localhost:3000/*",
@@ -16,6 +16,12 @@
   "background": {
     "service_worker": "background.js"
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*"],
+      "matches": ["https://www.youtube.com/*"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*"],

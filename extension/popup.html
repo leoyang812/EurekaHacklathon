@@ -6,7 +6,7 @@
     <title>Scroll Court</title>
     <style>
       body {
-        width: 320px;
+        width: 340px;
         margin: 0;
         color: #f9fafb;
         background: #111827;
@@ -19,30 +19,47 @@
         padding: 14px;
       }
 
-      h1 {
+      h1, h2, p {
         margin: 0;
+      }
+
+      h1 {
         color: #fbbf24;
         font-size: 18px;
       }
 
-      p {
-        margin: 0;
+      h2 {
+        color: #fef3c7;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      p, label, .tiny {
         color: #d1d5db;
         font-size: 12px;
         line-height: 1.4;
       }
 
+      section {
+        display: grid;
+        gap: 9px;
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+
       .stats {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 8px;
       }
 
       .stat {
+        min-width: 0;
         padding: 9px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 6px;
-        background: rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.07);
       }
 
       .stat span {
@@ -54,8 +71,9 @@
       .stat strong {
         display: block;
         margin-top: 3px;
-        font-size: 15px;
         overflow: hidden;
+        color: #ffffff;
+        font-size: 14px;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
@@ -63,19 +81,17 @@
       label {
         display: grid;
         gap: 6px;
-        color: #f9fafb;
-        font-size: 12px;
       }
 
-      input {
+      input, select {
         width: 100%;
         min-height: 36px;
         padding: 8px 9px;
         border: 1px solid rgba(255, 255, 255, 0.16);
         border-radius: 6px;
+        box-sizing: border-box;
         color: #f9fafb;
         background: rgba(255, 255, 255, 0.08);
-        box-sizing: border-box;
         font: inherit;
         font-size: 12px;
       }
@@ -105,20 +121,10 @@
         gap: 8px;
       }
 
-      .toggle {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        padding: 10px;
-        border-radius: 6px;
-        background: rgba(255, 255, 255, 0.06);
-      }
-
-      .divider {
-        border: none;
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
-        margin: 0;
+      .charge {
+        color: #fde68a;
+        font-size: 12px;
+        line-height: 1.45;
       }
 
       .status-ok { color: #4ade80; }
@@ -129,33 +135,55 @@
     <main>
       <header>
         <h1>Scroll Court</h1>
-        <p>Ancient philosophers are watching your watch history.</p>
+        <p>Case file for the current YouTube Shorts session.</p>
       </header>
 
-      <section class="stats" aria-label="Scroll Court stats">
-        <div class="stat"><span>Shorts</span><strong id="watched">0</strong></div>
-        <div class="stat"><span>Wisdom</span><strong id="wisdom">50</strong></div>
-        <div class="stat"><span>Rank</span><strong id="rank">Doomscroll Defendant</strong></div>
+      <section>
+        <h2>Court Status</h2>
+        <div class="row">
+          <button class="secondary" id="toggle" type="button">On</button>
+          <button class="secondary" id="reset" type="button">Reset Session</button>
+        </div>
+        <p id="password-status" class="tiny"></p>
       </section>
 
-      <hr class="divider" />
-
-      <section class="toggle">
-        <span>Interruptions</span>
-        <button class="secondary" id="toggle" type="button">On</button>
+      <section>
+        <h2>Evidence Collected</h2>
+        <div class="stats">
+          <div class="stat"><span>Shorts watched</span><strong id="watched">0</strong></div>
+          <div class="stat"><span>Wisdom</span><strong id="wisdom">50</strong></div>
+          <div class="stat"><span>Rank</span><strong id="rank">Doomscroll Defendant</strong></div>
+          <div class="stat"><span>Judgments survived</span><strong id="quiz-count">0</strong></div>
+        </div>
+        <p id="topics" class="tiny">Topics: evidence pending</p>
       </section>
 
-      <label>
-        API server URL
-        <input id="api-base" type="url" autocomplete="off" placeholder="http://localhost:3000" />
-      </label>
+      <section>
+        <h2>Current Charge</h2>
+        <p id="last-quote" class="charge">The court awaits evidence.</p>
+      </section>
 
-      <div class="row">
-        <button class="primary" id="save" type="button">Save URL</button>
-        <button class="secondary" id="reset" type="button">Reset Stats</button>
-      </div>
-
-      <p id="status"></p>
+      <section>
+        <h2>Settings</h2>
+        <label>
+          API server URL
+          <input id="api-base" type="url" autocomplete="off" placeholder="http://localhost:3000" />
+        </label>
+        <label>
+          Demo access code
+          <input id="demo-password" type="password" autocomplete="off" placeholder="Enter demo access code" />
+        </label>
+        <label>
+          Roast intensity
+          <select id="roast-intensity">
+            <option value="gentle">Gentle</option>
+            <option value="medium">Medium</option>
+            <option value="trial-by-hemlock">Trial by Hemlock</option>
+          </select>
+        </label>
+        <button class="primary" id="save" type="button">Save Settings</button>
+        <p id="status" class="tiny"></p>
+      </section>
     </main>
     <script src="popup.js"></script>
   </body>

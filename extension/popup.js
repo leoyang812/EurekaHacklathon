@@ -4,11 +4,18 @@ const DEFAULT_API_BASE = "http://localhost:3000";
 const defaultState = {
   enabled: true,
   apiBase: DEFAULT_API_BASE,
+  demoPassword: "",
   watchedCount: 0,
   wisdom: 50,
   quizCount: 0,
   lastShortUrl: "",
-  lastQuizAt: 0
+  lastQuizAt: 0,
+  nextJudgmentAt: 0,
+  recentEvidence: [],
+  sessionTopics: [],
+  roastIntensity: "medium",
+  lastQuote: "",
+  sessionEnded: false
 };
 
 const ranks = [
@@ -44,8 +51,21 @@ function render() {
   document.querySelector("#watched").textContent = String(state.watchedCount);
   document.querySelector("#wisdom").textContent = String(state.wisdom);
   document.querySelector("#rank").textContent = getRank(state.wisdom);
-  document.querySelector("#toggle").textContent = state.enabled ? "On" : "Off";
+  document.querySelector("#quiz-count").textContent = String(state.quizCount);
+  document.querySelector("#toggle").textContent = state.enabled ? "Interruptions On" : "Interruptions Off";
   document.querySelector("#api-base").value = state.apiBase || DEFAULT_API_BASE;
+  document.querySelector("#demo-password").value = state.demoPassword || "";
+  document.querySelector("#roast-intensity").value = state.roastIntensity || "medium";
+  document.querySelector("#last-quote").textContent = state.lastQuote || "The court awaits evidence.";
+  document.querySelector("#topics").textContent = `Topics: ${
+    (state.sessionTopics || []).length ? state.sessionTopics.join(", ") : "evidence pending"
+  } | Evidence items: ${(state.recentEvidence || []).length}`;
+
+  const passwordStatus = document.querySelector("#password-status");
+  passwordStatus.textContent = state.demoPassword
+    ? "Demo gate: access code saved locally."
+    : "Demo gate: enter the access code to unlock AI court actions.";
+  passwordStatus.className = state.demoPassword ? "status-ok" : "status-err";
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -58,13 +78,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.querySelector("#save").addEventListener("click", async () => {
-    const raw = document.querySelector("#api-base").value.trim();
-    const apiBase = raw || DEFAULT_API_BASE;
-    await storageSet({ apiBase });
+    const rawApiBase = document.querySelector("#api-base").value.trim();
+    const apiBase = rawApiBase || DEFAULT_API_BASE;
+    const demoPassword = document.querySelector("#demo-password").value.trim();
+    const roastIntensity = document.querySelector("#roast-intensity").value;
+
+    await storageSet({ apiBase, demoPassword, roastIntensity });
 
     const statusEl = document.querySelector("#status");
-    statusEl.textContent = `Saved: ${apiBase}`;
-    statusEl.className = "status-ok";
+    statusEl.textContent = demoPassword
+      ? "Settings saved. The court recognizes your seal."
+      : "Settings saved. Add the demo access code before using AI routes.";
+    statusEl.className = demoPassword ? "status-ok" : "status-err";
     render();
   });
 
@@ -74,11 +99,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       wisdom: 50,
       quizCount: 0,
       lastShortUrl: "",
-      lastQuizAt: 0
+      lastQuizAt: 0,
+      nextJudgmentAt: 0,
+      recentEvidence: [],
+      sessionTopics: [],
+      lastQuote: "",
+      sessionEnded: false
     });
 
     const statusEl = document.querySelector("#status");
-    statusEl.textContent = "Stats reset.";
+    statusEl.textContent = "Session reset. The court has misplaced the evidence.";
     statusEl.className = "";
     render();
   });

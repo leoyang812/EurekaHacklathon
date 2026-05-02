@@ -15,7 +15,11 @@ npm install
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
 DEMO_PASSWORD=choose_a_private_demo_password
+OPENAI_MODEL=gpt-4.1-mini
+OPENAI_VISION_MODEL=gpt-4.1-mini
 ```
+
+Use that same demo password in the extension popup. The OpenAI key stays only in `.env.local` and is never placed in `extension/`.
 
 3. Run the Next.js app:
 
@@ -31,21 +35,25 @@ npm run dev
 4. Select the `extension` folder.
 5. Open `https://www.youtube.com/shorts/*`.
 
-The extension injects a floating Scroll Court panel directly into YouTube Shorts.
+The extension injects a floating Scroll Court panel directly into YouTube Shorts. Court summons are intentionally randomized, so the UI does not reveal the next interruption count. Use **End Session** to generate the final receipt.
 
 ## Security Notes
 
 - Do not commit `.env.local`.
 - Do not put `OPENAI_API_KEY` in `extension/`.
-- The extension calls `/api/generate-receipt`; only the Next.js server route calls OpenAI.
+- The extension calls `/api/generate-quiz`, `/api/generate-receipt`, and `/api/analyze-frame`; only Next.js API routes call OpenAI.
+- All API routes require `DEMO_PASSWORD`; enter it in the extension popup before using AI receipts/attention checks.
+- The evidence system uses captions when available, one temporary visible-frame screenshot per Short, and metadata. Screenshots are sent only to `/api/analyze-frame` and are not stored.
+- The extension does not receive YouTube video files, full transcripts, audio, comments, cookies, accounts, emails, or browsing history.
 - If `OPENAI_API_KEY` is missing or OpenAI fails, the API returns a hardcoded fallback receipt.
-- The extension stores only local demo stats and the demo access code in `chrome.storage.local`.
+- The extension stores local demo stats, recent text evidence, settings, and the user-entered demo access code in `chrome.storage.local`.
 
 ## Extension Files
 
 - `extension/manifest.json`: Manifest V3 config.
-- `extension/content.js`: YouTube Shorts panel, URL tracking, quizzes, receipt request.
-- `extension/background.js`: Calls the local/deployed Next.js receipt API from the extension context.
+- `extension/content.js`: YouTube Shorts panel, URL tracking, randomized court attention checks, caption buffer, evidence selection, topic detection, receipt request.
+- `extension/background.js`: Calls the local/deployed Next.js APIs from the extension context and performs temporary visible-frame capture on YouTube Shorts only.
+- `extension/assets/`: Optional philosopher portraits. Add `socrates.png`, `plato.png`, `diogenes.png`, or `aristotle.png` to show real images in the animated court popup.
 - `extension/styles.css`: Isolated panel styling.
 - `extension/popup.html`: Popup dashboard.
 - `extension/popup.js`: Popup storage controls.
@@ -65,6 +73,22 @@ Expected JSON:
   "quizCount": 4
 }
 ```
+
+`POST /api/analyze-frame`
+
+Accepts a temporary `imageDataUrl` plus metadata and returns:
+
+```json
+{
+  "summary": "appears to show broad visual context",
+  "topics": ["fitness"],
+  "confidence": "medium"
+}
+```
+
+`POST /api/generate-quiz`
+
+Accepts `selectedEvidence` and returns the existing quiz shape. Caption evidence is treated as strongest, frame summaries as medium, and metadata as weak.
 
 Response:
 

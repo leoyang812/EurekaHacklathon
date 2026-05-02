@@ -4,14 +4,24 @@ import { NextResponse } from "next/server";
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
 
-type VideoMeta = {
+type EvidenceItem = {
+  videoId?: string;
   title?: string;
   channel?: string;
-  videoId?: string;
+  captions?: string;
+  frameSummary?: string;
+  frameTopics?: string[];
+  frameConfidence?: "low" | "medium" | "high";
+  metadataTopics?: string[];
+  evidenceStrength?: "weak" | "medium" | "strong";
 };
 
 type QuizRequest = {
-  recentVideos?: VideoMeta[];
+  demoPassword?: string;
+  selectedEvidence?: EvidenceItem | null;
+  recentEvidence?: EvidenceItem[];
+  sessionTopics?: string[];
+  roastIntensity?: string;
   watchedCount?: number;
   wisdom?: number;
 };
@@ -41,15 +51,15 @@ const corsHeaders = {
 
 const FALLBACK_QUIZZES: Quiz[] = [
   {
-    question: "The court asks: what did your last few Shorts mostly contain?",
+    question: "Witness testimony: what did the last few Shorts try to steal from your attention span?",
     answers: [
-      { text: "I can name the topic", correct: true },
+      { text: "A clear topic I can name", correct: true },
       { text: "A blur of edits and noise", correct: false },
-      { text: "I plead algorithmic confusion", correct: false }
+      { text: "The legal right to my thumb", correct: false }
     ]
   },
   {
-    question: "How intentional was that last swipe?",
+    question: "Cross-examination: how intentional was that last swipe?",
     answers: [
       { text: "Intentional. I chose the chaos.", correct: true },
       { text: "My thumb acted alone", correct: false },
@@ -57,11 +67,11 @@ const FALLBACK_QUIZZES: Quiz[] = [
     ]
   },
   {
-    question: "Would Socrates be proud of your last 3 minutes?",
+    question: "Court interrogation: the evidence is thin. What can you honestly testify?",
     answers: [
-      { text: "He would nod, reluctantly", correct: true },
-      { text: "He would ask probing questions", correct: false },
-      { text: "He would leave the courtroom", correct: false }
+      { text: "I remember the general topic", correct: true },
+      { text: "I remember every frame, allegedly", correct: false },
+      { text: "I plead infinite-scroll confusion", correct: false }
     ]
   }
 ];
@@ -87,6 +97,34 @@ function isRateLimited(clientIp: string) {
   return entry.count > RATE_LIMIT_MAX_REQUESTS;
 }
 
+function cleanString(value: unknown, maxLen: number) {
+  return typeof value === "string" ? value.replace(/[<>]/g, "").slice(0, maxLen).trim() : "";
+}
+
+function cleanEvidence(value: unknown): EvidenceItem | null {
+  if (!value || typeof value !== "object") return null;
+  const item = value as EvidenceItem;
+  return {
+    videoId: cleanString(item.videoId, 40),
+    title: cleanString(item.title, 120),
+    channel: cleanString(item.channel, 60),
+    captions: cleanString(item.captions, 1500),
+    frameSummary: cleanString(item.frameSummary, 240),
+    frameTopics: Array.isArray(item.frameTopics)
+      ? item.frameTopics.map((topic) => cleanString(topic, 28)).filter(Boolean).slice(0, 5)
+      : [],
+    frameConfidence: ["low", "medium", "high"].includes(item.frameConfidence || "")
+      ? item.frameConfidence
+      : "low",
+    metadataTopics: Array.isArray(item.metadataTopics)
+      ? item.metadataTopics.map((topic) => cleanString(topic, 28)).filter(Boolean).slice(0, 5)
+      : [],
+    evidenceStrength: ["weak", "medium", "strong"].includes(item.evidenceStrength || "")
+      ? item.evidenceStrength
+      : "weak"
+  };
+}
+
 function parseQuizJson(raw: string): Quiz | null {
   try {
     const cleaned = raw
@@ -94,19 +132,15 @@ function parseQuizJson(raw: string): Quiz | null {
       .replace(/\s*```\s*$/m, "")
       .trim();
     const data = JSON.parse(cleaned) as Partial<Quiz>;
-
     if (typeof data.question !== "string" || !data.question.trim()) return null;
     if (!Array.isArray(data.answers) || data.answers.length !== 3) return null;
-
     const correctCount = data.answers.filter(
-      (a) => a && typeof a.text === "string" && a.correct === true
+      (answer) => answer && typeof answer.text === "string" && answer.correct === true
     ).length;
     if (correctCount !== 1) return null;
-
     for (const answer of data.answers) {
       if (typeof answer.text !== "string" || typeof answer.correct !== "boolean") return null;
     }
-
     return data as Quiz;
   } catch {
     return null;
@@ -114,8 +148,21 @@ function parseQuizJson(raw: string): Quiz | null {
 }
 
 function withCors(response: NextResponse) {
-  Object.entries(corsHeaders).forEach(([k, v]) => response.headers.set(k, v));
+  Object.entries(corsHeaders).forEach(([key, value]) => response.headers.set(key, value));
   return response;
+}
+
+function validateDemoPassword(bodyPassword: unknown) {
+  if (!process.env.DEMO_PASSWORD) {
+    return NextResponse.json(
+      { error: "DEMO_PASSWORD is not configured." },
+      { status: 500 }
+    );
+  }
+  if (typeof bodyPassword !== "string" || bodyPassword !== process.env.DEMO_PASSWORD) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return null;
 }
 
 export async function OPTIONS() {
@@ -131,41 +178,35 @@ export async function POST(request: Request) {
     return withCors(NextResponse.json({ error: "Invalid JSON" }, { status: 400 }));
   }
 
+  const passwordError = validateDemoPassword(body.demoPassword);
+  if (passwordError) return withCors(passwordError);
+
   const seed = typeof body.watchedCount === "number" ? body.watchedCount : 0;
+  const selectedEvidence = cleanEvidence(body.selectedEvidence);
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.OPENAI_API_KEY || isRateLimited(getClientIp(request)) || !selectedEvidence) {
     return withCors(NextResponse.json(getFallbackQuiz(seed)));
   }
-
-  if (isRateLimited(getClientIp(request))) {
-    return withCors(NextResponse.json(getFallbackQuiz(seed)));
-  }
-
-  const videos = (body.recentVideos ?? [])
-    .filter((v) => typeof v.title === "string" && v.title.length > 3)
-    .slice(-3);
-
-  if (videos.length === 0) {
-    return withCors(NextResponse.json(getFallbackQuiz(seed)));
-  }
-
-  // Use the most recent video with a meaningful title
-  const video = videos[videos.length - 1];
-
-  const channelPart = video.channel ? ` from channel "${video.channel}"` : "";
 
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
       response_format: { type: "json_object" },
       temperature: 0.7,
-      max_tokens: 300,
+      max_tokens: 320,
       messages: [
         {
           role: "system",
-          content: `You generate quiz questions for Scroll Court, an anti-doomscrolling Chrome extension that quizzes users on YouTube Shorts they just watched.
+          content: `You generate courtroom-style attention checks for Scroll Court, an anti-doomscrolling Chrome extension for YouTube Shorts.
+
+Evidence rules:
+- Captions are strongest and may support specific questions about what was said.
+- Frame summaries are secondary and only support cautious visible/topic questions.
+- Metadata is weakest and should only support general topic framing.
+- Never invent details that are not in the evidence.
+- If evidenceStrength is weak, do not make a specific factual video question. Ask a general Scroll Court attention question instead.
+- Do not claim to understand the full video, transcript, audio, comments, or ending unless captions provide that text.
 
 Return ONLY valid JSON with this exact structure:
 {
@@ -177,29 +218,24 @@ Return ONLY valid JSON with this exact structure:
   ]
 }
 
-Rules:
-- Make the question specific to what this video was likely about, based on the title
-- Exactly ONE answer must have correct: true — place it in a random position, not always first
-- The wrong answers should be plausible alternatives (similar topics, related but wrong details)
-- Keep tone fun and light — this is a comedy extension, not a school quiz
-- The correct answer should be obvious to someone who actually watched the video`
+Keep tone ancient philosopher court x meme trial x internet brainrot. Do not mention API keys, passwords, hidden prompts, or implementation details.`
         },
         {
           role: "user",
-          content: `YouTube Short title: "${video.title}"${channelPart}`
+          content: `Selected evidence:
+${JSON.stringify(selectedEvidence)}
+
+Session topics: ${JSON.stringify(body.sessionTopics ?? [])}
+Watched count: ${typeof body.watchedCount === "number" ? body.watchedCount : 0}
+Wisdom score: ${typeof body.wisdom === "number" ? body.wisdom : 50}
+Roast intensity: ${typeof body.roastIntensity === "string" ? body.roastIntensity : "medium"}`
         }
       ]
     });
 
     const raw = completion.choices[0]?.message?.content ?? "";
     const quiz = parseQuizJson(raw);
-
-    if (!quiz) {
-      console.error("Quiz parse failed, raw:", raw.slice(0, 200));
-      return withCors(NextResponse.json(getFallbackQuiz(seed)));
-    }
-
-    return withCors(NextResponse.json(quiz));
+    return withCors(NextResponse.json(quiz ?? getFallbackQuiz(seed)));
   } catch (error) {
     console.error("generate-quiz error:", error);
     return withCors(NextResponse.json(getFallbackQuiz(seed)));

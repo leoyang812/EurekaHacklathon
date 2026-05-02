@@ -11,8 +11,8 @@ import {
 const steps = [
   "Load the extension folder in Chrome developer mode.",
   "Open a YouTube Shorts URL.",
-  "Watch the floating court panel count Shorts and interrupt every 3 swipes.",
-  "Use Face Judgment to generate the final receipt through the Next API."
+  "Watch the floating court panel count Shorts and summon you at unpredictable moments.",
+  "Use End Session to generate the final receipt through the Next API."
 ];
 
 const features = [
@@ -117,7 +117,7 @@ export default function HomePage() {
               </div>
               <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-amber-300 text-sm font-bold text-zinc-950">
                 <ReceiptText className="h-4 w-4" />
-                Face Judgment
+                End Session
               </button>
             </div>
           </div>
