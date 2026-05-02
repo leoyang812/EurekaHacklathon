@@ -225,20 +225,20 @@ export async function POST(request: Request) {
           content: `You are presented with pieces of evidence taken from the same Youtube Short. Propose a multiple-choice question designed to test a user who has watched the short whether they remember what they have watched.
 
 Evidence rules:
-- Use the evidence that best matches the Short's actual content, not whichever text field is longest.
-- If mainIdea is non-empty and supported by frameSummary, visible text, or meaningful captions, treat it as the best description of the Short's premise and prefer it for the question.
-- Do not quiz from mainIdea if it is speculative, vague, or unsupported by the other evidence fields.
+- Evidence consists of frame summaries (screenshots), captions, and metadata.
 - Frame summaries are primary when they describe visible action or hard-coded on-screen subtitles/text from the video itself.
 - YouTube captions are useful only when they clearly match speech/content in the Short. If captions look like song lyrics, background music, ambience, or unrelated audio, do not base the quiz on them.
 - Metadata/title/channel are weakest and should only support general topic framing. Do not quiz mainly from the title when frameSummary or meaningful captions exist.
 - Never invent details that are not in the evidence.
-- If evidence is thin, ask only about what is directly supported by visible frame summary/topics or meaningful captions.
-- Do not claim to understand the full video, transcript, audio, comments, or ending unless captions provide that text.
-- Make the question genuinely difficult but fair: someone who watched mindlessly should hesitate, someone who paid attention should know.
-- Ask one specific question about the topic of the video. Do not ask questions that are too generic or too obscure.
+
+Question rules:
+- Questions MUST capture the topic or main idea of the Short.
+- Questions should not be obscure (i.e. NOT 'what color was the shirt of the person in the video?').
+- Questions should be advanced enough to not be guessed.
 - The five answer choices must be distinct, plausible, and similar in length/detail.
 - Wrong choices should be believable near-misses, not obvious jokes, duplicates, or absurd throwaways.
 - Avoid repeating the same wording across choices.
+- Assume the user knows the video (i.e. do not include "in the video titled..."). The question statement should get straight to the point.
 - Do not put the correct answer first every time; vary its position.
 
 Return ONLY valid JSON with this exact structure:
