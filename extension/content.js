@@ -16,40 +16,6 @@
     "Sun Tzu observes: you know your enemy's algorithm far better than yourself.",
     "Confucius says: he who swipes without purpose arrives at confusion."
   ];
-  const QUIZZES = [
-    {
-      question: "The court asks: what did your last few Shorts mostly contain?",
-      answers: [
-        { text: "I can name the topic", delta: 12 },
-        { text: "A blur of edits and noise", delta: -8 },
-        { text: "I plead algorithmic confusion", delta: -4 }
-      ]
-    },
-    {
-      question: "How intentional was that last swipe?",
-      answers: [
-        { text: "Intentional. I chose the chaos.", delta: 6 },
-        { text: "My thumb acted alone", delta: -10 },
-        { text: "I was spiritually buffering", delta: -5 }
-      ]
-    },
-    {
-      question: "Can you recall one useful detail from this session?",
-      answers: [
-        { text: "Yes, surprisingly", delta: 14 },
-        { text: "Only the sound effect", delta: -6 },
-        { text: "The defendant remembers nothing", delta: -12 }
-      ]
-    },
-    {
-      question: "Would Socrates be proud of your last 3 minutes?",
-      answers: [
-        { text: "He would nod, reluctantly", delta: 8 },
-        { text: "He would ask probing questions", delta: -3 },
-        { text: "He would leave the courtroom", delta: -10 }
-      ]
-    }
-  ];
 
   const defaultState = {
     enabled: true,
@@ -58,13 +24,16 @@
     wisdom: 50,
     quizCount: 0,
     lastShortUrl: "",
-    lastQuizAt: 0
+    lastQuizAt: 0,
+    recentVideos: []
   };
 
   let state = { ...defaultState };
   let panelRoot;
-  let quizIndex = 0;
   let overlayActive = false;
+  let quizFetchInProgress = false;
+
+  // ─── Storage ───────────────────────────────────────────────
 
   function storageGet() {
     return new Promise((resolve) => {
@@ -81,8 +50,10 @@
     });
   }
 
+  // ─── Helpers ───────────────────────────────────────────────
+
   function getRank(wisdom) {
-    return RANKS.find((rank) => wisdom >= rank.min).name;
+    return RANKS.find((r) => wisdom >= r.min).name;
   }
 
   function clampWisdom(value) {
@@ -102,15 +73,6 @@
     );
   }
 
-  function getCurrentVideoTitle() {
-    const el =
-      document.querySelector("ytd-reel-video-renderer[is-active] .title") ||
-      document.querySelector("#shorts-container .title") ||
-      document.querySelector("h2.title yt-formatted-string") ||
-      document.title.replace(" - YouTube", "").trim();
-    return typeof el === "string" ? el : el?.textContent?.trim() || "";
-  }
-
   function fallbackReceipt() {
     return [
       "SCROLL COURT RECEIPT",
@@ -118,13 +80,38 @@
       `Wisdom rating: ${state.wisdom}/100`,
       `Rank: ${getRank(state.wisdom)}`,
       "",
-      "Verdict: The defendant entered YouTube Shorts for one video and emerged several swipes later with the confidence of a scholar and the memory of a loading spinner.",
+      "Verdict: The defendant entered YouTube Shorts seeking one harmless video and returned with the stunned expression of a philosopher who just discovered infinite scroll.",
       "",
       "Sentence: Close the tab, drink water, and pretend Marcus Aurelius did not see this."
     ].join("\n");
   }
 
-  // --- Scroll lock ---
+  // ─── Video metadata extraction ─────────────────────────────
+
+  function extractVideoMeta() {
+    const videoId = location.pathname.split("/shorts/")[1]?.split("?")[0] || "";
+
+    // document.title is the most reliable source — YouTube updates it on SPA nav
+    const title = document.title.replace(/\s*[-–|]\s*YouTube\s*$/i, "").trim();
+
+    // Channel name — try multiple selectors since YouTube's DOM changes often
+    let channel = "";
+    const channelCandidates = [
+      document.querySelector("ytd-reel-video-renderer[is-active] #channel-name a"),
+      document.querySelector("ytd-reel-video-renderer[is-active] .ytd-channel-name"),
+      document.querySelector(".ytd-reel-player-overlay-renderer #channel-name a"),
+      document.querySelector("#owner-name a"),
+      document.querySelector("a.yt-simple-endpoint.ytd-channel-name")
+    ];
+    for (const el of channelCandidates) {
+      const text = el?.textContent?.trim();
+      if (text) { channel = text; break; }
+    }
+
+    return { videoId, title: title || "", channel };
+  }
+
+  // ─── Scroll lock ───────────────────────────────────────────
 
   function lockScroll() {
     overlayActive = true;
@@ -152,65 +139,153 @@
     }
   }
 
-  // --- Blocking quiz overlay ---
+  // ─── Quiz overlay ──────────────────────────────────────────
 
-  function renderOverlay() {
+  function fillQuizInOverlay(overlay, quiz) {
+    const modal = overlay.querySelector(".sc-modal");
+    const statsEl = modal?.querySelector(".sc-modal-stats");
+    if (!modal || !statsEl) return;
+
+    modal.querySelector(".sc-modal-loading")?.remove();
+
+    const questionEl = document.createElement("p");
+    questionEl.className = "sc-modal-question";
+    questionEl.textContent = quiz.question;
+    modal.insertBefore(questionEl, statsEl);
+
+    const answersEl = document.createElement("div");
+    answersEl.className = "sc-modal-answers";
+
+    quiz.answers.forEach((answer) => {
+      const btn = document.createElement("button");
+      btn.className = "sc-modal-answer";
+      btn.type = "button";
+      btn.textContent = answer.text;
+
+      btn.addEventListener("click", async () => {
+        // Disable all buttons immediately to prevent double-click
+        answersEl
+          .querySelectorAll(".sc-modal-answer")
+          .forEach((b) => { b.disabled = true; });
+
+        btn.classList.add(answer.correct ? "sc-answer-correct" : "sc-answer-wrong");
+
+        // Show the correct answer if they got it wrong
+        if (!answer.correct) {
+          answersEl.querySelectorAll(".sc-modal-answer").forEach((b) => {
+            const isCorrect = quiz.answers[
+              [...answersEl.querySelectorAll(".sc-modal-answer")].indexOf(b)
+            ]?.correct;
+            if (isCorrect) b.classList.add("sc-answer-reveal");
+          });
+        }
+
+        const delta = answer.correct ? 15 : -12;
+        await storageSet({
+          wisdom: clampWisdom(state.wisdom + delta),
+          quizCount: state.quizCount + 1,
+          lastQuizAt: state.watchedCount
+        });
+
+        setTimeout(() => {
+          overlay.remove();
+          unlockScroll();
+          render();
+        }, 1100);
+      });
+
+      answersEl.appendChild(btn);
+    });
+
+    modal.insertBefore(answersEl, statsEl);
+  }
+
+  async function renderOverlay() {
     const existing = document.getElementById("sc-overlay");
 
     if (!isShortsUrl() || !isQuizPending()) {
-      if (existing) {
-        existing.remove();
-        unlockScroll();
-      }
+      if (existing) { existing.remove(); unlockScroll(); }
       return;
     }
 
-    if (existing) return; // overlay is already showing, wait for answer
+    if (existing || quizFetchInProgress) return;
 
     lockScroll();
+    quizFetchInProgress = true;
 
     const overlay = document.createElement("div");
     overlay.id = "sc-overlay";
 
-    const currentQuiz = QUIZZES[quizIndex % QUIZZES.length];
     const quote = QUOTES[state.watchedCount % QUOTES.length];
 
     overlay.innerHTML = `
-      <div class="sc-modal" role="dialog" aria-modal="true" aria-label="Scroll Court interruption">
+      <div class="sc-modal" role="dialog" aria-modal="true" aria-label="Scroll Court quiz">
         <div class="sc-modal-badge">⚖️ Scroll Court</div>
         <p class="sc-modal-quote">${quote}</p>
-        <strong class="sc-modal-question">${currentQuiz.question}</strong>
-        <div class="sc-modal-answers">
-          ${currentQuiz.answers
-            .map(
-              (answer, index) =>
-                `<button class="sc-modal-answer" type="button" data-answer="${index}">${answer.text}</button>`
-            )
-            .join("")}
-        </div>
+        <p class="sc-modal-loading">The court is deliberating…</p>
         <p class="sc-modal-stats">Shorts: ${state.watchedCount} · Wisdom: ${state.wisdom} · ${getRank(state.wisdom)}</p>
       </div>
     `;
 
     document.documentElement.appendChild(overlay);
 
-    overlay.querySelectorAll(".sc-modal-answer").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const answer = currentQuiz.answers[Number(btn.getAttribute("data-answer"))];
-        quizIndex += 1;
-        await storageSet({
-          wisdom: clampWisdom(state.wisdom + answer.delta),
-          quizCount: state.quizCount + 1,
-          lastQuizAt: state.watchedCount
-        });
-        overlay.remove();
-        unlockScroll();
-        render();
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: "SCROLL_COURT_GENERATE_QUIZ",
+        payload: {
+          recentVideos: state.recentVideos || [],
+          wisdom: state.wisdom,
+          watchedCount: state.watchedCount
+        }
       });
-    });
+
+      if (
+        response?.ok &&
+        typeof response.data?.question === "string" &&
+        Array.isArray(response.data?.answers)
+      ) {
+        fillQuizInOverlay(overlay, response.data);
+      } else {
+        fillQuizInOverlay(overlay, getFallbackQuiz());
+      }
+    } catch {
+      fillQuizInOverlay(overlay, getFallbackQuiz());
+    }
+
+    quizFetchInProgress = false;
   }
 
-  // --- Side panel ---
+  function getFallbackQuiz() {
+    const FALLBACKS = [
+      {
+        question: "The court asks: what did your last few Shorts mostly contain?",
+        answers: [
+          { text: "I can name the topic", correct: true },
+          { text: "A blur of edits and noise", correct: false },
+          { text: "I plead algorithmic confusion", correct: false }
+        ]
+      },
+      {
+        question: "How intentional was that last swipe?",
+        answers: [
+          { text: "Intentional. I chose the chaos.", correct: true },
+          { text: "My thumb acted alone", correct: false },
+          { text: "I was spiritually buffering", correct: false }
+        ]
+      },
+      {
+        question: "Would Socrates be proud of your last 3 minutes?",
+        answers: [
+          { text: "He would nod, reluctantly", correct: true },
+          { text: "He would ask probing questions", correct: false },
+          { text: "He would leave the courtroom", correct: false }
+        ]
+      }
+    ];
+    return FALLBACKS[state.watchedCount % FALLBACKS.length];
+  }
+
+  // ─── Side panel ────────────────────────────────────────────
 
   function render() {
     if (!panelRoot) return;
@@ -260,6 +335,7 @@
         wisdom: 50,
         quizCount: 0,
         lastQuizAt: 0,
+        recentVideos: [],
         lastShortUrl: isShortsUrl() ? location.href : ""
       });
       render();
@@ -283,7 +359,7 @@
           wisdom: state.wisdom,
           rank: getRank(state.wisdom),
           quizCount: state.quizCount,
-          videoTitle: getCurrentVideoTitle()
+          videoTitle: (state.recentVideos || []).at(-1)?.title || ""
         }
       });
 
@@ -293,15 +369,21 @@
     }
   }
 
+  // ─── Short counting + metadata ─────────────────────────────
+
   async function countCurrentShort() {
     if (!state.enabled || !isShortsUrl()) return;
 
     const currentUrl = location.href.split("?")[0];
     if (currentUrl === state.lastShortUrl) return;
 
+    const meta = extractVideoMeta();
+    const recentVideos = [...(state.recentVideos || []), meta].slice(-5);
+
     await storageSet({
       watchedCount: state.watchedCount + 1,
-      lastShortUrl: currentUrl
+      lastShortUrl: currentUrl,
+      recentVideos
     });
 
     render();
@@ -317,6 +399,8 @@
       }
     }, 700);
   }
+
+  // ─── Init ──────────────────────────────────────────────────
 
   async function init() {
     if (document.getElementById("scroll-court-root")) return;
@@ -339,7 +423,6 @@
       if (areaName !== "local" || !changes[STORAGE_KEY]) return;
       state = { ...defaultState, ...changes[STORAGE_KEY].newValue };
       render();
-      renderOverlay();
     });
   }
 

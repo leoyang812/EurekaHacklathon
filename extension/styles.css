@@ -253,6 +253,41 @@
   font-size: 11px;
 }
 
+.sc-modal-loading {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 13px;
+  animation: sc-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes sc-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.sc-modal-answer:disabled {
+  cursor: default;
+}
+
+.sc-answer-correct {
+  background: rgba(34, 197, 94, 0.22) !important;
+  border-color: rgba(34, 197, 94, 0.6) !important;
+  color: #bbf7d0 !important;
+}
+
+.sc-answer-wrong {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  color: #fecaca !important;
+}
+
+/* reveal the correct answer when user picks wrong */
+.sc-answer-reveal {
+  background: rgba(34, 197, 94, 0.12) !important;
+  border-color: rgba(34, 197, 94, 0.35) !important;
+  color: #86efac !important;
+}
+
 /* ─── Responsive ─────────────────────────────────────────── */
 
 @media (max-width: 720px) {
