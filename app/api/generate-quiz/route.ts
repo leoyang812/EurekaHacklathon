@@ -10,6 +10,7 @@ type EvidenceItem = {
   title?: string;
   channel?: string;
   captions?: string;
+  mainIdea?: string;
   frameSummary?: string;
   frameTopics?: string[];
   frameConfidence?: "low" | "medium" | "high";
@@ -109,6 +110,7 @@ function cleanEvidence(value: unknown): EvidenceItem | null {
     title: cleanString(item.title, 120),
     channel: cleanString(item.channel, 60),
     captions: cleanString(item.captions, 1500),
+    mainIdea: cleanString(item.mainIdea, 500),
     frameSummary: cleanString(item.frameSummary, 700),
     frameTopics: Array.isArray(item.frameTopics)
       ? item.frameTopics.map((topic) => cleanString(topic, 28)).filter(Boolean).slice(0, 5)
@@ -129,6 +131,7 @@ function isUsableEvidence(item: EvidenceItem | null) {
   if (!item || item.evidenceStrength === "weak") return false;
   return Boolean(
     (item.captions || "").trim().length > 10 ||
+    (item.mainIdea || "").trim().length > 8 ||
     (item.frameSummary || "").trim().length > 8 ||
     (item.title || "").trim().length > 3 ||
     (item.metadataTopics || []).length ||
@@ -223,6 +226,8 @@ export async function POST(request: Request) {
 
 Evidence rules:
 - Use the evidence that best matches the Short's actual content, not whichever text field is longest.
+- If mainIdea is non-empty and supported by frameSummary, visible text, or meaningful captions, treat it as the best description of the Short's premise and prefer it for the question.
+- Do not quiz from mainIdea if it is speculative, vague, or unsupported by the other evidence fields.
 - Frame summaries are primary when they describe visible action or hard-coded on-screen subtitles/text from the video itself.
 - YouTube captions are useful only when they clearly match speech/content in the Short. If captions look like song lyrics, background music, ambience, or unrelated audio, do not base the quiz on them.
 - Metadata/title/channel are weakest and should only support general topic framing. Do not quiz mainly from the title when frameSummary or meaningful captions exist.

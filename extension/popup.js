@@ -47,6 +47,25 @@ function storageSet(nextState) {
   });
 }
 
+function getTopicCounts() {
+  const counts = {};
+  (state.recentEvidence || []).forEach((item) => {
+    const topics = [
+      ...(item.metadataTopics || []),
+      ...(item.frameTopics || [])
+    ];
+    [...new Set(topics)].forEach((topic) => {
+      if (!topic) return;
+      counts[topic] = (counts[topic] || 0) + 1;
+    });
+  });
+
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([topic, count]) => `${count} ${topic}`)
+    .join(", ");
+}
+
 function render() {
   document.querySelector("#watched").textContent = String(state.watchedCount);
   document.querySelector("#wisdom").textContent = String(state.wisdom);
@@ -59,9 +78,7 @@ function render() {
   document.querySelector("#demo-password").value = state.demoPassword || "";
   document.querySelector("#roast-intensity").value = state.roastIntensity || "medium";
   document.querySelector("#last-quote").textContent = state.lastQuote || "The trial awaits evidence.";
-  document.querySelector("#topics").textContent = `Topics: ${
-    (state.sessionTopics || []).length ? state.sessionTopics.join(", ") : "evidence pending"
-  } | Evidence items: ${(state.recentEvidence || []).length}`;
+  document.querySelector("#topics").textContent = `Topics: ${getTopicCounts() || "evidence pending"}`;
 
   const passwordStatus = document.querySelector("#password-status");
   passwordStatus.textContent = state.demoPassword

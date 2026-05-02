@@ -123,17 +123,26 @@ export default function HomePage() {
       </section>
 
       <section className="bg-[#030303] py-14">
-        <div className="mx-auto grid w-full max-w-6xl gap-4 px-5 md:grid-cols-4 md:px-8">
-          {features.map((feature) => (
-            <article
-              className="rounded-lg border border-amber-100/15 bg-[#11100d]/80 p-5 shadow-xl shadow-black/20"
-              key={feature.title}
-            >
-              <feature.icon className="h-6 w-6 text-amber-200" />
-              <h2 className="mt-4 text-base font-black text-white">{feature.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-stone-400">{feature.text}</p>
-            </article>
-          ))}
+        <div className="mx-auto w-full max-w-6xl px-5 md:px-8">
+          <div className="mb-7 max-w-2xl">
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-amber-100">How the trial works</p>
+            <h2 className="mt-2 text-3xl font-black text-white">Awareness, not blockers.</h2>
+            <p className="mt-3 text-sm leading-6 text-stone-400">
+              The extension turns autopilot scrolling into evidence, questions, verdicts, and shareable shame.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-4">
+            {features.map((feature) => (
+              <article
+                className="rounded-lg border border-amber-100/15 bg-[#11100d]/80 p-5 shadow-xl shadow-black/20"
+                key={feature.title}
+              >
+                <feature.icon className="h-6 w-6 text-amber-200" />
+                <h2 className="mt-4 text-base font-black text-white">{feature.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-stone-400">{feature.text}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -144,10 +153,10 @@ export default function HomePage() {
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-amber-200/25 bg-amber-200/10 px-3 py-2 text-sm font-bold text-amber-100">
               <Chrome className="h-4 w-4" />
-              Demo Setup
+              Demo Stage
             </div>
             <h2 className="text-3xl font-black tracking-normal text-white">
-              Load the MVP and keep secrets server-side.
+              Load the extension and keep secrets server-side.
             </h2>
           </div>
           <ol className="grid gap-3">

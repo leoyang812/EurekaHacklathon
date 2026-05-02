@@ -60,6 +60,24 @@ function postJson(url, payload) {
   );
 }
 
+function buildTopicCounts(state) {
+  const counts = {};
+  const evidenceItems = Array.isArray(state.recentEvidence) ? state.recentEvidence : [];
+
+  evidenceItems.forEach((item) => {
+    const topics = [
+      ...(Array.isArray(item.metadataTopics) ? item.metadataTopics : []),
+      ...(Array.isArray(item.frameTopics) ? item.frameTopics : [])
+    ];
+    [...new Set(topics)].forEach((topic) => {
+      if (!topic) return;
+      counts[topic] = (counts[topic] || 0) + 1;
+    });
+  });
+
+  return counts;
+}
+
 function buildCloseReport(state) {
   const watchedCount = Number(state.watchedCount || 0);
   const quizCount = Number(state.quizCount || 0);
@@ -77,13 +95,14 @@ function buildCloseReport(state) {
     accuracy,
     rank: Number(state.wisdom || 50) >= 70 ? "Stoic Swipe Survivor" : "Doomscroll Defendant",
     topics: Array.isArray(state.sessionTopics) ? state.sessionTopics.slice(0, 5) : [],
-    verdict: `You closed the tab after ${watchedCount} Shorts. The court accepts this as a productivity event.`,
+    topicCounts: buildTopicCounts(state),
+    verdict: `You closed the tab after ${watchedCount} Shorts. The tribunal accepts this as evidence of escape.`,
     distractionPattern: watchedCount > 20
-      ? "Long session detected. Consider a shorter cap next time."
+      ? "Long session detected. The algorithm presented a heavier docket than necessary."
       : "Short session detected. Closing the tab quickly is evidence in your favor.",
     productivityAction: quizCount
-      ? `Review your ${accuracy}% quiz accuracy and do one offline task before reopening Shorts.`
-      : "Set a one-task intention before the next Shorts session.",
+      ? `Sentence: ${accuracy}% trial accuracy. The tribunal recommends stopping before the next autoplay spiral.`
+      : "Sentence: no trial testimony recorded. The tribunal remains suspicious.",
     totalShorts: Number(state.totalWatchedCount || watchedCount),
     totalTrials: Number(state.totalQuizCount || quizCount),
     correctAnswers: Number(state.correctQuizCount || 0),

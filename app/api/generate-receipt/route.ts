@@ -15,6 +15,7 @@ type EvidenceItem = {
   title?: string;
   channel?: string;
   captions?: string;
+  mainIdea?: string;
   frameSummary?: string;
   frameTopics?: string[];
   frameConfidence?: "low" | "medium" | "high";
@@ -83,6 +84,7 @@ function cleanEvidenceItem(item: EvidenceItem): EvidenceItem {
     title: cleanString(item.title, 120),
     channel: cleanString(item.channel, 60),
     captions: cleanString(item.captions, 900),
+    mainIdea: cleanString(item.mainIdea, 240),
     frameSummary: cleanString(item.frameSummary, 240),
     frameTopics: Array.isArray(item.frameTopics)
       ? item.frameTopics.map((topic) => cleanString(topic, 28)).filter(Boolean).slice(0, 5)

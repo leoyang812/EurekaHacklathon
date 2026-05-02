@@ -24,7 +24,7 @@
     { philosopher: "Aristotle", text: "Aristotle identified three causes of your downfall: autoplay, boredom, and one guy making pasta at 2x speed." },
     { philosopher: "Socrates", text: "The unexamined scroll is not worth swiping." },
     { philosopher: "Diogenes", text: "Diogenes inspected your thumb's testimony. It was not flattering." },
-    { philosopher: "Socrates", text: "Socrates asked for a definition of productivity. The court records show silence." },
+    { philosopher: "Socrates", text: "Socrates asked for a definition of attention. The court records show silence." },
     { philosopher: "Diogenes", text: "Diogenes brought a lantern to find your focus. He found three gym edits and a prank." },
     { philosopher: "Plato", text: "Plato left the cave. You opened another Short." },
     { philosopher: "Marcus Aurelius", text: "Marcus Aurelius notes that attention is a choice made one moment at a time." }
@@ -432,9 +432,17 @@
     ].slice(0, 5);
   }
 
+  function hasBrainrotTopic(item) {
+    return [
+      ...(item.metadataTopics || []),
+      ...(item.frameTopics || [])
+    ].includes("brainrot");
+  }
+
   function calculateEvidenceStrength(item) {
     if ((item.captions || "").trim().length > 40) return "strong";
     if ((item.captions || "").trim().length > 10) return "medium";
+    if ((item.mainIdea || "").trim().length > 20) return "medium";
     if ((item.frameSummary || "").trim().length > 8) return "medium";
     if ((item.frameTopics || []).length || (item.metadataTopics || []).length) return "medium";
     if ((item.title || "").trim().length > 8) return "medium";
@@ -501,10 +509,12 @@
     const previous = index >= 0 ? existing[index] : {};
     const merged = {
       captions: "",
+      mainIdea: "",
       frameSummary: "",
       frameTopics: [],
       frameConfidence: "low",
       metadataTopics: [],
+      brainrotPenaltyApplied: false,
       evidenceStrength: "weak",
       createdAt: Date.now(),
       ...previous,
@@ -517,10 +527,15 @@
       ? [...existing.slice(0, index), merged, ...existing.slice(index + 1)]
       : [...existing, merged];
     const trimmed = nextEvidence.slice(-MAX_EVIDENCE_ITEMS);
+    const shouldApplyBrainrotPenalty = hasBrainrotTopic(merged) && !previous.brainrotPenaltyApplied;
+    if (shouldApplyBrainrotPenalty) {
+      merged.brainrotPenaltyApplied = true;
+    }
 
     await storageSet({
       recentEvidence: trimmed,
-      sessionTopics: getSessionTopics(trimmed)
+      sessionTopics: getSessionTopics(trimmed),
+      wisdom: shouldApplyBrainrotPenalty ? clampWisdom(state.wisdom - 4) : state.wisdom
     });
   }
 
@@ -571,6 +586,7 @@
     if (item.evidenceStrength === "weak") return false;
     return Boolean(
       (item.captions || "").trim().length > 10 ||
+      (item.mainIdea || "").trim().length > 8 ||
       (item.frameSummary || "").trim().length > 8 ||
       (item.title || "").trim().length > 3 ||
       (item.metadataTopics || []).length ||
@@ -983,10 +999,15 @@
 
       const previous = (state.recentEvidence || []).find((item) => item.videoId === meta.videoId);
       const existingSummary = previous?.frameSummary || "";
+      const existingMainIdea = previous?.mainIdea || "";
       const nextSummary = [existingSummary, response.data?.summary]
         .filter(Boolean)
         .join(" | ")
         .slice(0, 500);
+      const responseMainIdea = (response.data?.mainIdea || "").trim();
+      const nextMainIdea = responseMainIdea.length > existingMainIdea.length
+        ? responseMainIdea.slice(0, 260)
+        : existingMainIdea.slice(0, 260);
       const nextTopics = [
         ...new Set([
           ...(previous?.frameTopics || []),
@@ -1003,6 +1024,7 @@
 
       await upsertEvidence({
         videoId: meta.videoId,
+        mainIdea: nextMainIdea,
         frameSummary: nextSummary,
         frameTopics: nextTopics,
         frameConfidence

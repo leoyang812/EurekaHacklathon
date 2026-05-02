@@ -11,6 +11,7 @@ type FrameRequest = {
 
 type FrameAnalysis = {
   summary: string;
+  mainIdea: string;
   topics: string[];
   confidence: "low" | "medium" | "high";
 };
@@ -68,6 +69,7 @@ function parseAnalysis(raw: string): FrameAnalysis | null {
 
     return {
       summary: cleanString(data.summary, 240),
+      mainIdea: cleanString((data as Partial<FrameAnalysis>).mainIdea, 220),
       topics: data.topics
         .filter((topic) => typeof topic === "string")
         .map((topic) => cleanString(topic, 28))
@@ -105,6 +107,7 @@ export async function POST(request: Request) {
     return withCors(
       NextResponse.json({
         summary: "",
+        mainIdea: "",
         topics: [],
         confidence: "low"
       } satisfies FrameAnalysis)
@@ -122,14 +125,19 @@ export async function POST(request: Request) {
         {
           role: "system",
           content:
-            "You analyze one visible screenshot frame from a YouTube Shorts page for a comedy anti-doomscrolling extension. Describe only what is visible in this single frame. Do not claim to understand the whole video. Use cautious wording like 'appears to show'. Prioritize the main visual action and any large hard-coded on-screen text/subtitles that are part of the video itself, such as TikTok/Reels captions. Ignore YouTube chrome, usernames, channel names, comments, buttons, and profile details. If visible subtitles appear to describe the actual content, include their gist in the summary. Return JSON only with summary, topics, and confidence."
+            "You analyze one visible screenshot frame from a YouTube Shorts page for a comedy anti-doomscrolling extension. Describe only what is visible in this single frame. Do not claim to understand the whole video. Use cautious wording like 'appears to show'. Prioritize the main visual action and any large hard-coded on-screen text/subtitles that are part of the video itself, such as TikTok/Reels captions. Ignore YouTube chrome, usernames, channel names, comments, buttons, and profile details. If visible subtitles appear to describe the actual content, include their gist in the summary and use it to cautiously infer mainIdea. Return JSON only with summary, mainIdea, topics, and confidence."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Frame metadata: title="${cleanString(body.title, 120)}", channel="${cleanString(body.channel, 60)}", videoId="${cleanString(body.videoId, 40)}". Return JSON: {"summary": string, "topics": string[], "confidence": "low" | "medium" | "high"}.`
+              text: `Frame metadata: title="${cleanString(body.title, 120)}", channel="${cleanString(body.channel, 60)}", videoId="${cleanString(body.videoId, 40)}".
+
+Return JSON: {"summary": string, "mainIdea": string, "topics": string[], "confidence": "low" | "medium" | "high"}.
+
+"summary" should describe the visible frame.
+"mainIdea" should be your cautious best guess at the Short's premise, claim, joke, or point, based only on visible text/action and metadata. If the frame is too ambiguous, use an empty string.`
             },
             {
               type: "image_url",
@@ -147,6 +155,7 @@ export async function POST(request: Request) {
       NextResponse.json(
         analysis ?? {
           summary: "",
+          mainIdea: "",
           topics: [],
           confidence: "low"
         }
@@ -157,6 +166,7 @@ export async function POST(request: Request) {
     return withCors(
       NextResponse.json({
         summary: "",
+        mainIdea: "",
         topics: [],
         confidence: "low"
       } satisfies FrameAnalysis)
