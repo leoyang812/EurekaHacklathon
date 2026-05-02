@@ -17,18 +17,19 @@
     "assets/Images/socrates-jumpscare3.png"
   ];
 
-  const QUOTES = [
-    '"If scrolling is your power, then what are you without it?" - Socrates (probably)',
-    '"The unexamined short is not worth watching." - Socrates',
-    '“If scrolling is sure to result in victory, then you must scroll.” - Sun Tzu, The Art of War',
-    "Aristotle identified three causes of your downfall: autoplay, boredom, and one guy making pasta at 2x speed.",
-    "The unexamined scroll is not worth swiping.",
-    "Your thumb has filed for workers' compensation.",
-    "Socrates asked for a definition of productivity. The court records show silence.",
-    "Diogenes brought a lantern to find your focus. He found three gym edits and a prank.",
-    "Plato left the cave. You opened another Short.",
-    "The jury finds your attention span guilty of fleeing the scene."
+  const COURT_QUOTES = [
+    { philosopher: "Socrates", text: '"If scrolling is your power, then what are you without it?" - Socrates' },
+    { philosopher: "Socrates", text: '"The unexamined short is not worth watching." - Socrates' },
+    { philosopher: "Sun Tzu", text: '"If scrolling is sure to result in victory, then you must scroll." - Sun Tzu' },
+    { philosopher: "Aristotle", text: "Aristotle identified three causes of your downfall: autoplay, boredom, and one guy making pasta at 2x speed." },
+    { philosopher: "Socrates", text: "The unexamined scroll is not worth swiping." },
+    { philosopher: "Diogenes", text: "Diogenes inspected your thumb's testimony. It was not flattering." },
+    { philosopher: "Socrates", text: "Socrates asked for a definition of productivity. The court records show silence." },
+    { philosopher: "Diogenes", text: "Diogenes brought a lantern to find your focus. He found three gym edits and a prank." },
+    { philosopher: "Plato", text: "Plato left the cave. You opened another Short." },
+    { philosopher: "Marcus Aurelius", text: "Marcus Aurelius notes that attention is a choice made one moment at a time." }
   ];
+  const QUOTES = COURT_QUOTES.map((quote) => quote.text);
   const WRONG_FEEDBACK_QUOTES = [
     { philosopher: "Socrates", text: "You watched it. Tell me: what did you actually understand?", use: "default" },
     { philosopher: "Socrates", text: "If you cannot answer, were you ever paying attention?", use: "default" },
@@ -252,7 +253,11 @@
   }
 
   function getRandomQuote() {
-    return QUOTES[Math.floor(Math.random() * QUOTES.length)];
+    return getRandomCourtQuote().text;
+  }
+
+  function getRandomCourtQuote() {
+    return COURT_QUOTES[Math.floor(Math.random() * COURT_QUOTES.length)];
   }
 
   function pickItem(items, seed) {
@@ -311,6 +316,10 @@
 
   function getPhilosopherForName(name) {
     return PHILOSOPHERS.find((item) => item.name === name);
+  }
+
+  function getDefaultPhilosopherAsset(name) {
+    return getPhilosopherForName(name)?.assets?.default || "";
   }
 
   function getFeedbackAsset(feedback, context) {
@@ -1009,7 +1018,7 @@
     overlay.innerHTML = `
       <div class="sc-modal" role="dialog" aria-modal="true" aria-label="The Recall Trial cross-examination">
         ${getLogoMarkup("sc-brand-logo-modal")}
-        ${getPhilosopherMarkup()}
+        ${getPhilosopherMarkup(state.lastPhilosopher, state.lastPhilosopherAsset)}
         <div class="sc-modal-badge">The Recall Trial</div>
         <p class="sc-modal-quote">${state.lastQuote || getRandomQuote()}</p>
         <p class="sc-modal-loading">The tribunal is reviewing captions, frame evidence, and metadata...</p>
@@ -1086,6 +1095,10 @@
     const trialSuccess = state.quizCount
       ? `${state.sessionCorrectQuizCount || 0}/${state.quizCount}`
       : "0/0";
+    const judge =
+      getPhilosopherForName(state.lastPhilosopher) ||
+      PHILOSOPHERS[state.watchedCount % PHILOSOPHERS.length];
+    const judgeName = judge.name;
 
     panelRoot.innerHTML = `
       <div class="sc-court-shell ${state.enabled ? "" : "sc-closed"}">
@@ -1103,17 +1116,12 @@
           <div class="sc-body">
             <div class="sc-judge-stage">
               ${getPhilosopherMarkup(state.lastPhilosopher, state.lastPhilosopherAsset, "sc-philosopher-judge")}
-            </div>
-            <div class="sc-wisdom-hero">
-              <span>Recall Score</span>
-              <strong>${state.wisdom}</strong>
-              <p>${courtMood}</p>
+              <strong class="sc-philosopher-name">${judgeName}</strong>
             </div>
             <div class="sc-quote">
-              <span>The judge whispers</span>
+              <span>${judgeName} says</span>
               <p>${quote}</p>
             </div>
-            <p class="sc-panel-line">${state.sessionEnded ? "Session ended. Receipt is ready for the archive." : getSummonsCopy()}</p>
           </div>
         </section>` : ""}
 
@@ -1238,11 +1246,14 @@
     countedVideoIds.add(meta.videoId);
     await flushCaptions(meta.videoId);
 
+    const courtQuote = getRandomCourtQuote();
     await storageSet({
       watchedCount: state.watchedCount + 1,
       totalWatchedCount: (state.totalWatchedCount || 0) + 1,
       lastShortUrl: meta.url,
-      lastQuote: getRandomQuote()
+      lastQuote: courtQuote.text,
+      lastPhilosopher: courtQuote.philosopher,
+      lastPhilosopherAsset: getDefaultPhilosopherAsset(courtQuote.philosopher)
     });
 
     if (!state.nextJudgmentAt) {

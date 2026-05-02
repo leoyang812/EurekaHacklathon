@@ -82,17 +82,21 @@
 }
 
 .sc-panel-pop {
-  animation: sc-panel-pop 0.22s ease-out;
+  animation: sc-panel-pop 0.72s cubic-bezier(0.16, 0.86, 0.22, 1) both;
 }
 
 @keyframes sc-panel-pop {
   from {
     opacity: 0;
-    transform: translateX(-10px) scale(0.98);
+    transform: translateY(92px) scale(0.94);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1.012);
   }
   to {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -185,18 +189,45 @@
 .sc-judge-stage {
   display: grid;
   place-items: center;
-  margin: 2px 0 10px;
+  gap: 10px;
+  margin: 4px 0 8px;
+  text-align: center;
+}
+
+.sc-panel-pop .sc-judge-stage {
+  animation: sc-judge-pop 0.78s cubic-bezier(0.16, 0.86, 0.22, 1) 0.08s both;
+}
+
+@keyframes sc-judge-pop {
+  from {
+    opacity: 0;
+    transform: translateY(54px) scale(0.9);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.035);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .sc-panel .sc-philosopher-judge {
-  width: 108px;
-  height: 108px;
+  width: 118px;
+  height: 118px;
   border-width: 2px;
   border-color: rgba(245, 211, 122, 0.58);
   box-shadow:
     0 0 0 7px rgba(245, 211, 122, 0.12),
     0 18px 34px rgba(0, 0, 0, 0.38);
   animation: none;
+}
+
+.sc-philosopher-name {
+  color: #f8fafc;
+  font-size: 18px;
+  letter-spacing: 0;
 }
 
 .sc-panel .sc-philosopher-fallback {
@@ -359,16 +390,35 @@
 
 .sc-quote {
   display: grid;
-  gap: 5px;
-  padding: 12px;
+  gap: 10px;
+  padding: 16px;
   border: 1px solid rgba(245, 211, 122, 0.22);
   border-radius: 8px;
   background: rgba(245, 211, 122, 0.08);
 }
 
+.sc-panel-pop .sc-quote {
+  animation: sc-quote-pop 0.68s cubic-bezier(0.16, 0.86, 0.22, 1) 0.22s both;
+}
+
+@keyframes sc-quote-pop {
+  from {
+    opacity: 0;
+    transform: translateY(46px) scale(0.97);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.006);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .sc-quote span {
   color: #f5d37a;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -376,8 +426,8 @@
 .sc-quote p {
   margin: 0;
   color: #fff0b8;
-  font-size: 15px;
-  line-height: 1.35;
+  font-size: 18px;
+  line-height: 1.42;
   font-style: italic;
 }
 
