@@ -120,7 +120,8 @@
         default: "assets/Images/socrates1.jpg",
         intense: "assets/Images/socrates2.jpg",
         harsh: "assets/Images/socrates3.jpg"
-      }
+      },
+      aceAsset: "assets/AceAttorney/Socratesaceattoeny.png"
     },
     {
       name: "Plato",
@@ -129,7 +130,8 @@
         default: "assets/Images/plato1.jpg",
         intense: "assets/Images/plato2.png",
         harsh: "assets/Images/plato2.png"
-      }
+      },
+      aceAsset: "assets/AceAttorney/Platoace.png"
     },
     {
       name: "Diogenes",
@@ -138,7 +140,8 @@
         default: "assets/Images/diogenes1.jpg",
         intense: "assets/Images/diogenes2.jpg",
         harsh: "assets/Images/diogenes2.jpg"
-      }
+      },
+      aceAsset: "assets/AceAttorney/Diogenes.png"
     },
     {
       name: "Aristotle",
@@ -147,7 +150,8 @@
         default: "assets/Images/aristotle1.jpg",
         intense: "assets/Images/aristotle2.jpg",
         harsh: "assets/Images/aristotle2.jpg"
-      }
+      },
+      aceAsset: "assets/AceAttorney/Aristotle.png"
     },
     {
       name: "Marcus Aurelius",
@@ -156,7 +160,8 @@
         default: "assets/Images/marcus1.jpg",
         intense: "assets/Images/marcus2.jpg",
         harsh: "assets/Images/marcus2.jpg"
-      }
+      },
+      aceAsset: "assets/AceAttorney/MarcusAce.png"
     },
     {
       name: "Sun Tzu",
@@ -165,7 +170,8 @@
         default: "assets/Images/suntzu1.jpg",
         intense: "assets/Images/suntzu2.jpg",
         harsh: "assets/Images/suntzu2.jpg"
-      }
+      },
+      aceAsset: "assets/AceAttorney/SunTzu.png"
     }
   ];
   const TOPIC_KEYWORDS = {
@@ -318,6 +324,15 @@
     return PHILOSOPHERS.find((item) => item.name === name);
   }
 
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function getDefaultPhilosopherAsset(name) {
     return getPhilosopherForName(name)?.assets?.default || "";
   }
@@ -377,11 +392,35 @@
     return `<img class="sc-brand-logo ${extraClass}" src="${chrome.runtime.getURL("assets/Images/Logo.png")}" alt="The Recall Trial" />`;
   }
 
+  function getAceAttorneyMarkup(philosopher, quote) {
+    const asset = philosopher?.aceAsset || philosopher?.assets?.default || "";
+    const img = asset
+      ? `<img class="sc-aa-character" src="${chrome.runtime.getURL(asset)}" alt="${escapeHtml(philosopher.name)}" />`
+      : "";
+    const name = escapeHtml(philosopher?.name || "The Judge");
+    return `
+      <div class="sc-aa-stage">
+        <div class="sc-aa-nameplate">${name.toUpperCase()}</div>
+        <div class="sc-aa-scene">
+          ${img}
+        </div>
+        <div class="sc-aa-dialogue">
+          <span>${name}</span>
+          <p>${escapeHtml(quote)}</p>
+          <i aria-hidden="true"></i>
+        </div>
+      </div>
+    `;
+  }
+
   function hideBrokenPhilosopherImage(root = document) {
     root.querySelector(".sc-philosopher-img")?.addEventListener("error", (event) => {
       event.currentTarget.style.display = "none";
     });
     root.querySelector(".sc-brand-logo")?.addEventListener("error", (event) => {
+      event.currentTarget.style.display = "none";
+    });
+    root.querySelector(".sc-aa-character")?.addEventListener("error", (event) => {
       event.currentTarget.style.display = "none";
     });
   }
@@ -1157,27 +1196,8 @@
 
     panelRoot.innerHTML = `
       <div class="sc-court-shell ${state.enabled ? "" : "sc-closed"}">
-        ${hasJudgeFeedback ? `<section class="sc-panel sc-panel-left ${shouldPopJudgePanel ? "sc-panel-pop" : ""}" aria-label="The Recall Trial judge">
-          <header class="sc-header">
-            <div class="sc-header-mark">
-              ${getLogoMarkup()}
-              <div class="sc-title">
-                <strong>The Recall Trial</strong>
-                <span>${state.enabled ? "Trial is in session" : "Trial dismissed"}</span>
-              </div>
-            </div>
-            <button class="sc-icon-button" id="sc-toggle" type="button" title="${state.enabled ? "Collapse panels" : "Open panels"}">${state.enabled ? "-" : "+"}</button>
-          </header>
-          <div class="sc-body">
-            <div class="sc-judge-stage">
-              ${getPhilosopherMarkup(state.lastPhilosopher, state.lastPhilosopherAsset, "sc-philosopher-judge")}
-              <strong class="sc-philosopher-name">${judgeName}</strong>
-            </div>
-            <div class="sc-quote">
-              <span>${judgeName} says</span>
-              <p>${quote}</p>
-            </div>
-          </div>
+        ${hasJudgeFeedback ? `<section class="sc-panel sc-panel-left sc-aa-panel ${shouldPopJudgePanel ? "sc-panel-pop" : ""}" aria-label="The Recall Trial judge">
+          ${getAceAttorneyMarkup(judge, quote)}
         </section>` : ""}
 
         <aside class="sc-panel sc-panel-right ${state.caseFileOpen === false ? "sc-case-file-closed" : ""}" aria-label="The Recall Trial case file">

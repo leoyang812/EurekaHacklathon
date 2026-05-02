@@ -18,7 +18,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["assets/*", "assets/Images/*", "assets/sound/*"],
+      "resources": ["assets/*", "assets/Images/*", "assets/AceAttorney/*", "assets/sound/*"],
       "matches": ["https://www.youtube.com/*"]
     }
   ],
