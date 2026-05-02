@@ -218,7 +218,7 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: `You generate courtroom-style attention checks for Scroll Court, an anti-doomscrolling Chrome extension for YouTube Shorts.
+          content: `You are presented with pieces of evidence taken from the same Youtube Short. Propose a multiple-choice question designed to test a user who has watched the short whether they remember what they have watched.
 
 Evidence rules:
 - Captions are strongest and may support specific questions about what was said.
@@ -228,7 +228,7 @@ Evidence rules:
 - If evidence is thin, ask only about what is directly supported by the title, topics, frame summary, or captions.
 - Do not claim to understand the full video, transcript, audio, comments, or ending unless captions provide that text.
 - Make the question genuinely difficult but fair: someone who watched mindlessly should hesitate, someone who paid attention should know.
-- Ask about one specific, evidence-supported detail or distinction. Do not ask generic self-reflection questions.
+- Ask one specific question about the topic of the video. Do not ask questions that are too generic or too obscure.
 - The four answer choices must be distinct, plausible, and similar in length/detail.
 - Wrong choices should be believable near-misses, not obvious jokes, duplicates, or absurd throwaways.
 - Avoid repeating the same wording across choices.
