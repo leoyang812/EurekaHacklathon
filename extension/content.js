@@ -21,9 +21,9 @@
   ];
 
   const QUOTES = [
-    "Socrates asked what you learned. Your thumb declined to comment.",
-    "Plato's cave had shadows. Yours has Subway Surfers under a podcast clip.",
-    "Diogenes searched for an honest attention span and closed the tab.",
+    '"If scrolling is your power, then what are you without it?" - Socrates (probably)',
+    '"The unexamined short is not worth watching." - Socrates',
+    '“If scrolling is sure to result in victory, then you must scroll.” - Sun Tzu, The Art of War',
     "Aristotle identified three causes of your downfall: autoplay, boredom, and one guy making pasta at 2x speed.",
     "The unexamined scroll is not worth swiping.",
     "Your thumb has filed for workers' compensation.",
