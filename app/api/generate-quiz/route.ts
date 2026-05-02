@@ -49,37 +49,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type"
 };
 
-const FALLBACK_QUIZZES: Quiz[] = [
-  {
-    question: "Witness testimony: what did the last few Shorts try to steal from your attention span?",
-    answers: [
-      { text: "A clear topic I can name", correct: true },
-      { text: "A blur of edits and noise", correct: false },
-      { text: "The legal right to my thumb", correct: false }
-    ]
-  },
-  {
-    question: "Cross-examination: how intentional was that last swipe?",
-    answers: [
-      { text: "Intentional. I chose the chaos.", correct: true },
-      { text: "My thumb acted alone", correct: false },
-      { text: "I was spiritually buffering", correct: false }
-    ]
-  },
-  {
-    question: "Court interrogation: the evidence is thin. What can you honestly testify?",
-    answers: [
-      { text: "I remember the general topic", correct: true },
-      { text: "I remember every frame, allegedly", correct: false },
-      { text: "I plead infinite-scroll confusion", correct: false }
-    ]
-  }
-];
-
-function getFallbackQuiz(seed: number): Quiz {
-  return shuffleQuiz(FALLBACK_QUIZZES[seed % FALLBACK_QUIZZES.length], seed);
-}
-
 function getClientIp(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) return forwardedFor.split(",")[0]?.trim() ?? "unknown";
@@ -155,6 +124,17 @@ function cleanEvidence(value: unknown): EvidenceItem | null {
   };
 }
 
+function isUsableEvidence(item: EvidenceItem | null) {
+  if (!item || item.evidenceStrength === "weak") return false;
+  return Boolean(
+    (item.captions || "").trim().length > 10 ||
+    (item.frameSummary || "").trim().length > 8 ||
+    (item.title || "").trim().length > 3 ||
+    (item.metadataTopics || []).length ||
+    (item.frameTopics || []).length
+  );
+}
+
 function parseQuizJson(raw: string): Quiz | null {
   try {
     const cleaned = raw
@@ -163,7 +143,7 @@ function parseQuizJson(raw: string): Quiz | null {
       .trim();
     const data = JSON.parse(cleaned) as Partial<Quiz>;
     if (typeof data.question !== "string" || !data.question.trim()) return null;
-    if (!Array.isArray(data.answers) || data.answers.length !== 3) return null;
+    if (!Array.isArray(data.answers) || data.answers.length !== 4) return null;
     const correctCount = data.answers.filter(
       (answer) => answer && typeof answer.text === "string" && answer.correct === true
     ).length;
@@ -216,8 +196,16 @@ export async function POST(request: Request) {
   const seed = typeof body.watchedCount === "number" ? body.watchedCount : 0;
   const selectedEvidence = cleanEvidence(body.selectedEvidence);
 
-  if (!process.env.OPENAI_API_KEY || isRateLimited(getClientIp(request)) || !selectedEvidence) {
-    return withCors(NextResponse.json(getFallbackQuiz(seed)));
+  if (!process.env.OPENAI_API_KEY) {
+    return withCors(NextResponse.json({ error: "OPENAI_API_KEY is not configured." }, { status: 503 }));
+  }
+
+  if (isRateLimited(getClientIp(request))) {
+    return withCors(NextResponse.json({ error: "Rate limited" }, { status: 429 }));
+  }
+
+  if (!isUsableEvidence(selectedEvidence)) {
+    return withCors(NextResponse.json({ skipped: true, reason: "weak_evidence" }, { status: 422 }));
   }
 
   try {
@@ -226,7 +214,7 @@ export async function POST(request: Request) {
       model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
       response_format: { type: "json_object" },
       temperature: 0.7,
-      max_tokens: 320,
+      max_tokens: 460,
       messages: [
         {
           role: "system",
@@ -237,10 +225,13 @@ Evidence rules:
 - Frame summaries are secondary and only support cautious visible/topic questions.
 - Metadata is weakest and should only support general topic framing.
 - Never invent details that are not in the evidence.
-- If evidenceStrength is weak, do not make a specific factual video question. Ask a general Scroll Court attention question instead.
+- If evidence is thin, ask only about what is directly supported by the title, topics, frame summary, or captions.
 - Do not claim to understand the full video, transcript, audio, comments, or ending unless captions provide that text.
-- The three answer choices must be clearly distinct from each other.
-- You may include one clever/trick distractor, but the correct answer must still be obviously distinct from the wrong choices.
+- Make the question genuinely difficult but fair: someone who watched mindlessly should hesitate, someone who paid attention should know.
+- Ask about one specific, evidence-supported detail or distinction. Do not ask generic self-reflection questions.
+- The four answer choices must be distinct, plausible, and similar in length/detail.
+- Wrong choices should be believable near-misses, not obvious jokes, duplicates, or absurd throwaways.
+- Avoid repeating the same wording across choices.
 - Do not put the correct answer first every time; vary its position.
 
 Return ONLY valid JSON with this exact structure:
@@ -248,6 +239,7 @@ Return ONLY valid JSON with this exact structure:
   "question": "...",
   "answers": [
     { "text": "...", "correct": true },
+    { "text": "...", "correct": false },
     { "text": "...", "correct": false },
     { "text": "...", "correct": false }
   ]
@@ -270,9 +262,12 @@ Roast intensity: ${typeof body.roastIntensity === "string" ? body.roastIntensity
 
     const raw = completion.choices[0]?.message?.content ?? "";
     const quiz = parseQuizJson(raw);
-    return withCors(NextResponse.json(quiz ? shuffleQuiz(quiz, seed) : getFallbackQuiz(seed)));
+    if (!quiz) {
+      return withCors(NextResponse.json({ error: "OpenAI returned invalid quiz JSON." }, { status: 502 }));
+    }
+    return withCors(NextResponse.json(shuffleQuiz(quiz, seed)));
   } catch (error) {
     console.error("generate-quiz error:", error);
-    return withCors(NextResponse.json(getFallbackQuiz(seed)));
+    return withCors(NextResponse.json({ error: "Quiz generation failed." }, { status: 502 }));
   }
 }

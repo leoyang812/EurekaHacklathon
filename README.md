@@ -15,8 +15,8 @@ npm install
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
 DEMO_PASSWORD=choose_a_private_demo_password
-OPENAI_MODEL=gpt-4.1-mini
-OPENAI_VISION_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_VISION_MODEL=gpt-4o-mini
 ```
 
 Use that same demo password in the extension popup. The OpenAI key stays only in `.env.local` and is never placed in `extension/`.
@@ -94,7 +94,12 @@ Response:
 
 ```json
 {
-  "receipt": "SCROLL COURT RECEIPT...",
-  "source": "openai"
+  "question": "What detail did the Short focus on?",
+  "answers": [
+    { "text": "A specific detail supported by the evidence", "correct": true },
+    { "text": "A plausible but incorrect near-miss", "correct": false },
+    { "text": "Another distinct near-miss", "correct": false },
+    { "text": "A fourth distinct near-miss", "correct": false }
+  ]
 }
 ```

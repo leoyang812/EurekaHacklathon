@@ -6,6 +6,9 @@
   const MAX_FRAME_ANALYSES_PER_SHORT = 5;
   const FRAME_ANALYSIS_INTERVAL_MS = 2000;
   const FIRST_FRAME_ANALYSIS_DELAY_MS = 1500;
+  const MIN_WATCH_DWELL_MS = 3000;
+  const JUDGMENT_MIN_SHORTS = 4;
+  const JUDGMENT_MAX_SHORTS = 5;
 
   const RANKS = [
     { min: 90, name: "Oracle of Restraint" },
@@ -47,33 +50,6 @@
     brainrot: ["sigma", "skibidi", "rizz", "prank", "meme", "subway surfers"],
     music: ["song", "music", "concert", "guitar", "piano", "beat"]
   };
-  const FALLBACKS = [
-    {
-      question: "Witness testimony: what did the last few Shorts try to steal from your attention span?",
-      answers: [
-        { text: "A clear topic I can name", correct: true },
-        { text: "A blur of edits and noise", correct: false },
-        { text: "The legal right to my thumb", correct: false }
-      ]
-    },
-    {
-      question: "Cross-examination: how intentional was that last swipe?",
-      answers: [
-        { text: "Intentional. I chose the chaos.", correct: true },
-        { text: "My thumb acted alone", correct: false },
-        { text: "I was spiritually buffering", correct: false }
-      ]
-    },
-    {
-      question: "Court interrogation: the evidence is thin. What can you honestly testify?",
-      answers: [
-        { text: "I remember the general topic", correct: true },
-        { text: "I remember every frame, allegedly", correct: false },
-        { text: "I plead infinite-scroll confusion", correct: false }
-      ]
-    }
-  ];
-
   const defaultState = {
     enabled: true,
     apiBase: "http://localhost:3000",
@@ -96,8 +72,14 @@
   let overlayActive = false;
   let quizFetchInProgress = false;
   let activeVideoId = "";
+  let activeMeta = null;
+  let activeVideoStartedAt = 0;
+  let dwellTimer = null;
   let captionBuffer = [];
   const frameAnalysisCounts = new Map();
+  const countedVideoIds = new Set();
+  let pausedVideoForCourt = null;
+  let shouldResumeVideoAfterCourt = false;
 
   function storageGet() {
     return new Promise((resolve) => {
@@ -172,8 +154,11 @@
   }
 
   function calculateEvidenceStrength(item) {
-    if ((item.captions || "").trim().length > 80) return "strong";
-    if (item.frameSummary && ["medium", "high"].includes(item.frameConfidence)) return "medium";
+    if ((item.captions || "").trim().length > 40) return "strong";
+    if ((item.captions || "").trim().length > 10) return "medium";
+    if ((item.frameSummary || "").trim().length > 8) return "medium";
+    if ((item.frameTopics || []).length || (item.metadataTopics || []).length) return "medium";
+    if ((item.title || "").trim().length > 8) return "medium";
     return "weak";
   }
 
@@ -279,6 +264,18 @@
     return null;
   }
 
+  function hasEvidenceForQuiz(item) {
+    if (!item) return false;
+    if (item.evidenceStrength === "weak") return false;
+    return Boolean(
+      (item.captions || "").trim().length > 10 ||
+      (item.frameSummary || "").trim().length > 8 ||
+      (item.title || "").trim().length > 3 ||
+      (item.metadataTopics || []).length ||
+      (item.frameTopics || []).length
+    );
+  }
+
   function isQuizPending() {
     if (FEEDBACK_TEST_EVERY_SHORT) {
       return (
@@ -300,7 +297,9 @@
   }
 
   async function scheduleNextJudgment() {
-    await storageSet({ nextJudgmentAt: state.watchedCount + randomInt(5, 7) });
+    await storageSet({
+      nextJudgmentAt: state.watchedCount + randomInt(JUDGMENT_MIN_SHORTS, JUDGMENT_MAX_SHORTS)
+    });
   }
 
   function fallbackReceipt() {
@@ -317,10 +316,6 @@
     ].join("\n");
   }
 
-  function getFallbackQuiz() {
-    return FALLBACKS[state.watchedCount % FALLBACKS.length];
-  }
-
   function lockScroll() {
     overlayActive = true;
     document.body.style.overflow = "hidden";
@@ -331,6 +326,36 @@
     overlayActive = false;
     document.body.style.overflow = "";
     document.documentElement.style.overflow = "";
+  }
+
+  function getActiveVideoElement() {
+    const activeRenderer = document.querySelector("ytd-reel-video-renderer[is-active]");
+    return activeRenderer?.querySelector("video") || document.querySelector("video");
+  }
+
+  function pauseActiveVideoForCourt() {
+    const video = getActiveVideoElement();
+    if (!video || video.paused) {
+      pausedVideoForCourt = null;
+      shouldResumeVideoAfterCourt = false;
+      return;
+    }
+
+    pausedVideoForCourt = video;
+    shouldResumeVideoAfterCourt = true;
+    video.pause();
+  }
+
+  function resumeVideoAfterCourt() {
+    if (!shouldResumeVideoAfterCourt || !pausedVideoForCourt) return;
+
+    const video = pausedVideoForCourt;
+    pausedVideoForCourt = null;
+    shouldResumeVideoAfterCourt = false;
+
+    video.play().catch(() => {
+      // Chrome may block playback after some user/extension interactions.
+    });
   }
 
   function blockNavKeys(event) {
@@ -354,7 +379,23 @@
     await scheduleNextJudgment();
     overlay.remove();
     unlockScroll();
+    resumeVideoAfterCourt();
     render();
+  }
+
+  function dismissOverlayWithoutEvaluation(overlay) {
+    overlay.remove();
+    unlockScroll();
+    resumeVideoAfterCourt();
+    render();
+  }
+
+  async function skipJudgmentWithoutEvaluation(overlay) {
+    await storageSet({
+      lastQuizAt: FEEDBACK_TEST_EVERY_SHORT ? state.watchedCount : state.nextJudgmentAt
+    });
+    await scheduleNextJudgment();
+    dismissOverlayWithoutEvaluation(overlay);
   }
 
   function fillLockedOverlay(overlay) {
@@ -417,6 +458,7 @@
         setTimeout(() => {
           overlay.remove();
           unlockScroll();
+          resumeVideoAfterCourt();
           render();
         }, 1100);
       });
@@ -501,6 +543,7 @@
     if (existing || quizFetchInProgress) return;
 
     lockScroll();
+    pauseActiveVideoForCourt();
     quizFetchInProgress = true;
     const overlay = document.createElement("div");
     overlay.id = "sc-overlay";
@@ -519,11 +562,10 @@
     });
 
     try {
-      await flushCaptions(activeVideoId);
       const selectedEvidence = selectEvidenceForJudgment();
 
-      if (!selectedEvidence) {
-        await dismissOverlay(overlay);
+      if (!hasEvidenceForQuiz(selectedEvidence)) {
+        await skipJudgmentWithoutEvaluation(overlay);
         return;
       }
 
@@ -549,10 +591,10 @@
       ) {
         fillQuizInOverlay(overlay, response.data);
       } else {
-        fillQuizInOverlay(overlay, getFallbackQuiz());
+        await skipJudgmentWithoutEvaluation(overlay);
       }
     } catch {
-      fillQuizInOverlay(overlay, getFallbackQuiz());
+      await skipJudgmentWithoutEvaluation(overlay);
     } finally {
       quizFetchInProgress = false;
     }
@@ -570,6 +612,7 @@
       ? state.sessionTopics.join(", ")
       : "evidence pending";
     const evidenceStrength = selectEvidenceForJudgment()?.evidenceStrength || "weak";
+    const receiptNudge = state.watchedCount >= 10 || state.quizCount >= 2;
 
     panelRoot.innerHTML = `
       <section class="sc-panel ${state.enabled ? "" : "sc-closed"}" aria-label="Scroll Court panel">
@@ -590,6 +633,7 @@
           <p class="sc-muted">Wisdom is your session score for surviving court interrogations.</p>
           <p class="sc-muted">Uses captions, visible-frame analysis, and session metadata.</p>
           ${FEEDBACK_TEST_EVERY_SHORT ? '<p class="sc-muted">Feedback test mode: summons appears on every Short.</p>' : ""}
+          ${receiptNudge && !state.sessionEnded ? '<p class="sc-muted">The court has enough evidence for a receipt.</p>' : ""}
           <p class="sc-muted">${state.sessionEnded ? "Session ended. Receipt is ready for the archive." : getSummonsCopy()}</p>
           <p class="sc-muted">Evidence collected: ${topics} (${evidenceStrength})</p>
           <div class="sc-actions">
@@ -661,7 +705,37 @@
     }
   }
 
-  async function countCurrentShort() {
+  async function markActiveShortWatched(meta) {
+    if (!meta?.videoId || activeVideoId !== meta.videoId || countedVideoIds.has(meta.videoId)) return;
+    if (Date.now() - activeVideoStartedAt < MIN_WATCH_DWELL_MS) return;
+
+    countedVideoIds.add(meta.videoId);
+    await flushCaptions(meta.videoId);
+
+    await storageSet({
+      watchedCount: state.watchedCount + 1,
+      lastShortUrl: meta.url,
+      lastQuote: getRandomQuote()
+    });
+
+    if (!state.nextJudgmentAt) {
+      await scheduleNextJudgment();
+    }
+
+    render();
+  }
+
+  function scheduleDwellCheck(meta) {
+    if (dwellTimer) {
+      clearTimeout(dwellTimer);
+    }
+
+    dwellTimer = setTimeout(() => {
+      markActiveShortWatched(meta);
+    }, MIN_WATCH_DWELL_MS);
+  }
+
+  async function handleCurrentShort() {
     if (!state.enabled || state.sessionEnded || !isShortsUrl()) return;
 
     const currentUrl = location.href.split("?")[0];
@@ -674,16 +748,13 @@
     }
 
     activeVideoId = meta.videoId;
-    const lastQuote = getRandomQuote();
+    activeMeta = meta;
+    activeVideoStartedAt = Date.now();
+
     await upsertEvidence({
       ...meta,
       captions: "",
       createdAt: Date.now()
-    });
-    await storageSet({
-      watchedCount: state.watchedCount + 1,
-      lastShortUrl: currentUrl,
-      lastQuote
     });
 
     if (!state.nextJudgmentAt) {
@@ -691,16 +762,22 @@
     }
 
     analyzeFramesForVideo(meta);
+    scheduleDwellCheck(meta);
     render();
     renderOverlay();
   }
 
   function watchUrlChanges() {
     let previousUrl = location.href;
+    document.addEventListener("yt-navigate-finish", () => {
+      previousUrl = location.href;
+      handleCurrentShort();
+    });
+
     setInterval(() => {
       if (location.href !== previousUrl) {
         previousUrl = location.href;
-        countCurrentShort();
+        handleCurrentShort();
       }
     }, 700);
   }
@@ -736,7 +813,7 @@
 
     render();
     renderOverlay();
-    countCurrentShort();
+    handleCurrentShort();
     watchUrlChanges();
     setInterval(collectCaptions, 1000);
 
