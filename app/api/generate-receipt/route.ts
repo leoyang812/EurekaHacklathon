@@ -11,11 +11,11 @@ type RateLimitEntry = {
 };
 
 type ReceiptRequest = {
-  demoPassword?: string;
   watchedCount?: number;
   wisdom?: number;
   rank?: string;
   quizCount?: number;
+  videoTitle?: string;
 };
 
 const rateLimitStore = new Map<string, RateLimitEntry>();
@@ -31,44 +31,33 @@ function getClientIp(request: Request) {
   if (forwardedFor) {
     return forwardedFor.split(",")[0]?.trim() ?? "unknown";
   }
-
   return request.headers.get("x-real-ip") ?? "unknown";
 }
 
 function isRateLimited(clientIp: string) {
   const now = Date.now();
-  const currentEntry = rateLimitStore.get(clientIp);
+  const entry = rateLimitStore.get(clientIp);
 
-  if (!currentEntry || currentEntry.resetAt <= now) {
-    rateLimitStore.set(clientIp, {
-      count: 1,
-      resetAt: now + RATE_LIMIT_WINDOW_MS
-    });
-
+  if (!entry || entry.resetAt <= now) {
+    rateLimitStore.set(clientIp, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return false;
   }
 
-  currentEntry.count += 1;
-  return currentEntry.count > RATE_LIMIT_MAX_REQUESTS;
+  entry.count += 1;
+  return entry.count > RATE_LIMIT_MAX_REQUESTS;
 }
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number) {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return fallback;
-  }
-
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
   return Math.max(min, Math.min(max, Math.round(value)));
 }
 
-function cleanRank(value: unknown) {
-  if (typeof value !== "string") {
-    return "Doomscroll Defendant";
-  }
-
-  return value.replace(/[^\w\s-]/g, "").slice(0, 40) || "Doomscroll Defendant";
+function cleanString(value: unknown, maxLen: number, fallback: string) {
+  if (typeof value !== "string") return fallback;
+  return value.replace(/[<>]/g, "").slice(0, maxLen).trim() || fallback;
 }
 
-function fallbackReceipt(input: Required<Omit<ReceiptRequest, "demoPassword">>) {
+function fallbackReceipt(input: Required<ReceiptRequest>) {
   return [
     "SCROLL COURT RECEIPT",
     `Shorts watched: ${input.watchedCount}`,
@@ -101,49 +90,35 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as ReceiptRequest;
   } catch {
-    return withCors(
-      NextResponse.json({ error: "Invalid JSON request." }, { status: 400 })
-    );
+    return withCors(NextResponse.json({ error: "Invalid JSON request." }, { status: 400 }));
   }
 
-  const receiptInput = {
+  const receiptInput: Required<ReceiptRequest> = {
     watchedCount: clampNumber(body.watchedCount, 0, MAX_SHORTS, 0),
     wisdom: clampNumber(body.wisdom, 0, 100, 50),
-    rank: cleanRank(body.rank),
-    quizCount: clampNumber(body.quizCount, 0, MAX_SHORTS, 0)
+    rank: cleanString(body.rank, 40, "Doomscroll Defendant"),
+    quizCount: clampNumber(body.quizCount, 0, MAX_SHORTS, 0),
+    videoTitle: cleanString(body.videoTitle, 120, "")
   };
-
-  if (process.env.DEMO_PASSWORD && body.demoPassword !== process.env.DEMO_PASSWORD) {
-    return withCors(
-      NextResponse.json(
-        { receipt: fallbackReceipt(receiptInput), source: "fallback" },
-        { status: 200 }
-      )
-    );
-  }
 
   if (isRateLimited(getClientIp(request))) {
     return withCors(
-      NextResponse.json(
-        { receipt: fallbackReceipt(receiptInput), source: "fallback" },
-        { status: 200 }
-      )
+      NextResponse.json({ receipt: fallbackReceipt(receiptInput), source: "fallback" })
     );
   }
 
   if (!process.env.OPENAI_API_KEY) {
     return withCors(
-      NextResponse.json(
-        { receipt: fallbackReceipt(receiptInput), source: "fallback" },
-        { status: 200 }
-      )
+      NextResponse.json({ receipt: fallbackReceipt(receiptInput), source: "fallback" })
     );
   }
 
   try {
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const videoLine = receiptInput.videoTitle
+      ? `The last video title was: "${receiptInput.videoTitle}".`
+      : "";
 
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
@@ -155,7 +130,7 @@ export async function POST(request: Request) {
         },
         {
           role: "user",
-          content: `Create a roast-style receipt with these stats: ${JSON.stringify(receiptInput)}. Use 6 to 9 short lines. Include a verdict, one philosopher quote parody, and one playful sentence.`
+          content: `Create a roast-style receipt with these stats: ${JSON.stringify(receiptInput)}. ${videoLine} Use 6 to 9 short lines. Include a verdict, one philosopher quote parody, and one playful sentence.`
         }
       ],
       temperature: 0.8,
@@ -163,18 +138,13 @@ export async function POST(request: Request) {
     });
 
     const receipt =
-      completion.choices[0]?.message?.content?.trim() ??
-      fallbackReceipt(receiptInput);
+      completion.choices[0]?.message?.content?.trim() ?? fallbackReceipt(receiptInput);
 
     return withCors(NextResponse.json({ receipt, source: "openai" }));
   } catch (error) {
     console.error("Generate receipt API error:", error);
-
     return withCors(
-      NextResponse.json(
-        { receipt: fallbackReceipt(receiptInput), source: "fallback" },
-        { status: 200 }
-      )
+      NextResponse.json({ receipt: fallbackReceipt(receiptInput), source: "fallback" })
     );
   }
 }

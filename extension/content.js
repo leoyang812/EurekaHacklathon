@@ -12,7 +12,9 @@
     "Plato saw the cave. You saw three cooking clips and a prank.",
     "Marcus Aurelius whispers: the feed is endless, your attention is not.",
     "Aristotle requests evidence that you remember the previous Short.",
-    "Diogenes has entered the courtroom carrying only judgment."
+    "Diogenes has entered the courtroom carrying only judgment.",
+    "Sun Tzu observes: you know your enemy's algorithm far better than yourself.",
+    "Confucius says: he who swipes without purpose arrives at confusion."
   ];
   const QUIZZES = [
     {
@@ -38,13 +40,20 @@
         { text: "Only the sound effect", delta: -6 },
         { text: "The defendant remembers nothing", delta: -12 }
       ]
+    },
+    {
+      question: "Would Socrates be proud of your last 3 minutes?",
+      answers: [
+        { text: "He would nod, reluctantly", delta: 8 },
+        { text: "He would ask probing questions", delta: -3 },
+        { text: "He would leave the courtroom", delta: -10 }
+      ]
     }
   ];
 
   const defaultState = {
     enabled: true,
-    unlocked: false,
-    demoPassword: "",
+    apiBase: "http://localhost:3000",
     watchedCount: 0,
     wisdom: 50,
     quizCount: 0,
@@ -53,8 +62,9 @@
   };
 
   let state = { ...defaultState };
-  let root;
+  let panelRoot;
   let quizIndex = 0;
+  let overlayActive = false;
 
   function storageGet() {
     return new Promise((resolve) => {
@@ -83,6 +93,24 @@
     return location.hostname === "www.youtube.com" && location.pathname.startsWith("/shorts/");
   }
 
+  function isQuizPending() {
+    return (
+      state.enabled &&
+      state.watchedCount > 0 &&
+      state.watchedCount % 3 === 0 &&
+      state.lastQuizAt !== state.watchedCount
+    );
+  }
+
+  function getCurrentVideoTitle() {
+    const el =
+      document.querySelector("ytd-reel-video-renderer[is-active] .title") ||
+      document.querySelector("#shorts-container .title") ||
+      document.querySelector("h2.title yt-formatted-string") ||
+      document.title.replace(" - YouTube", "").trim();
+    return typeof el === "string" ? el : el?.textContent?.trim() || "";
+  }
+
   function fallbackReceipt() {
     return [
       "SCROLL COURT RECEIPT",
@@ -96,26 +124,113 @@
     ].join("\n");
   }
 
-  function render() {
-    if (!root) return;
+  // --- Scroll lock ---
 
-    if (!isShortsUrl()) {
-      root.innerHTML = "";
+  function lockScroll() {
+    overlayActive = true;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+  }
+
+  function unlockScroll() {
+    overlayActive = false;
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+  }
+
+  function blockNavKeys(e) {
+    if (overlayActive && ["ArrowUp", "ArrowDown", " ", "k", "j"].includes(e.key)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
+  function blockWheel(e) {
+    if (overlayActive) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
+  // --- Blocking quiz overlay ---
+
+  function renderOverlay() {
+    const existing = document.getElementById("sc-overlay");
+
+    if (!isShortsUrl() || !isQuizPending()) {
+      if (existing) {
+        existing.remove();
+        unlockScroll();
+      }
       return;
     }
 
+    if (existing) return; // overlay is already showing, wait for answer
+
+    lockScroll();
+
+    const overlay = document.createElement("div");
+    overlay.id = "sc-overlay";
+
     const currentQuiz = QUIZZES[quizIndex % QUIZZES.length];
-    const showQuiz = state.enabled && state.watchedCount > 0 && state.watchedCount % 3 === 0 && state.lastQuizAt !== state.watchedCount;
     const quote = QUOTES[state.watchedCount % QUOTES.length];
 
-    root.innerHTML = `
+    overlay.innerHTML = `
+      <div class="sc-modal" role="dialog" aria-modal="true" aria-label="Scroll Court interruption">
+        <div class="sc-modal-badge">⚖️ Scroll Court</div>
+        <p class="sc-modal-quote">${quote}</p>
+        <strong class="sc-modal-question">${currentQuiz.question}</strong>
+        <div class="sc-modal-answers">
+          ${currentQuiz.answers
+            .map(
+              (answer, index) =>
+                `<button class="sc-modal-answer" type="button" data-answer="${index}">${answer.text}</button>`
+            )
+            .join("")}
+        </div>
+        <p class="sc-modal-stats">Shorts: ${state.watchedCount} · Wisdom: ${state.wisdom} · ${getRank(state.wisdom)}</p>
+      </div>
+    `;
+
+    document.documentElement.appendChild(overlay);
+
+    overlay.querySelectorAll(".sc-modal-answer").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const answer = currentQuiz.answers[Number(btn.getAttribute("data-answer"))];
+        quizIndex += 1;
+        await storageSet({
+          wisdom: clampWisdom(state.wisdom + answer.delta),
+          quizCount: state.quizCount + 1,
+          lastQuizAt: state.watchedCount
+        });
+        overlay.remove();
+        unlockScroll();
+        render();
+      });
+    });
+  }
+
+  // --- Side panel ---
+
+  function render() {
+    if (!panelRoot) return;
+
+    if (!isShortsUrl()) {
+      panelRoot.innerHTML = "";
+      return;
+    }
+
+    const quote = QUOTES[state.watchedCount % QUOTES.length];
+    const nextQuizAt = Math.ceil((state.watchedCount + 1) / 3) * 3;
+
+    panelRoot.innerHTML = `
       <section class="sc-panel ${state.enabled ? "" : "sc-closed"}" aria-label="Scroll Court panel">
         <header class="sc-header">
           <div class="sc-title">
             <strong>Scroll Court</strong>
             <span>${state.enabled ? "Court is in session" : "Court dismissed"}</span>
           </div>
-          <button class="sc-icon-button" id="sc-toggle" type="button" title="${state.enabled ? "Collapse panel" : "Open panel"}">${state.enabled ? "-" : "+"}</button>
+          <button class="sc-icon-button" id="sc-toggle" type="button" title="${state.enabled ? "Collapse panel" : "Open panel"}">${state.enabled ? "−" : "+"}</button>
         </header>
         <div class="sc-body">
           <div class="sc-stats">
@@ -124,16 +239,7 @@
             <div class="sc-stat"><span>Rank</span><strong>${getRank(state.wisdom)}</strong></div>
           </div>
           <div class="sc-quote">${quote}</div>
-          ${
-            showQuiz
-              ? `<div class="sc-quiz">
-                  <strong>${currentQuiz.question}</strong>
-                  ${currentQuiz.answers
-                    .map((answer, index) => `<button class="sc-answer" type="button" data-answer="${index}">${answer.text}</button>`)
-                    .join("")}
-                </div>`
-              : `<p class="sc-muted">Next judgment at ${Math.ceil((state.watchedCount + 1) / 3) * 3} Shorts.</p>`
-          }
+          <p class="sc-muted">Next judgment at ${nextQuizAt} Shorts.</p>
           <div class="sc-actions">
             <button class="sc-button" id="sc-judge" type="button">Face Judgment</button>
             <button class="sc-button sc-secondary" id="sc-reset" type="button">Reset</button>
@@ -143,12 +249,12 @@
       </section>
     `;
 
-    root.querySelector("#sc-toggle")?.addEventListener("click", async () => {
+    panelRoot.querySelector("#sc-toggle")?.addEventListener("click", async () => {
       await storageSet({ enabled: !state.enabled });
       render();
     });
 
-    root.querySelector("#sc-reset")?.addEventListener("click", async () => {
+    panelRoot.querySelector("#sc-reset")?.addEventListener("click", async () => {
       await storageSet({
         watchedCount: 0,
         wisdom: 50,
@@ -159,43 +265,30 @@
       render();
     });
 
-    root.querySelectorAll(".sc-answer").forEach((button) => {
-      button.addEventListener("click", async () => {
-        const answer = currentQuiz.answers[Number(button.getAttribute("data-answer"))];
-        quizIndex += 1;
-        await storageSet({
-          wisdom: clampWisdom(state.wisdom + answer.delta),
-          quizCount: state.quizCount + 1,
-          lastQuizAt: state.watchedCount
-        });
-        render();
-      });
-    });
-
-    root.querySelector("#sc-judge")?.addEventListener("click", showReceipt);
+    panelRoot.querySelector("#sc-judge")?.addEventListener("click", showReceipt);
   }
 
   async function showReceipt() {
-    const receipt = root?.querySelector("#sc-receipt");
+    const receipt = panelRoot?.querySelector("#sc-receipt");
     if (!receipt) return;
 
     receipt.classList.add("sc-visible");
-    receipt.textContent = "The philosophers are reviewing the evidence...";
+    receipt.textContent = "The philosophers are reviewing the evidence…";
 
     try {
       const response = await chrome.runtime.sendMessage({
         type: "SCROLL_COURT_GENERATE_RECEIPT",
         payload: {
-          demoPassword: state.demoPassword,
           watchedCount: state.watchedCount,
           wisdom: state.wisdom,
           rank: getRank(state.wisdom),
-          quizCount: state.quizCount
+          quizCount: state.quizCount,
+          videoTitle: getCurrentVideoTitle()
         }
       });
 
       receipt.textContent = response?.data?.receipt || fallbackReceipt();
-    } catch (error) {
+    } catch {
       receipt.textContent = fallbackReceipt();
     }
   }
@@ -210,7 +303,9 @@
       watchedCount: state.watchedCount + 1,
       lastShortUrl: currentUrl
     });
+
     render();
+    renderOverlay();
   }
 
   function watchUrlChanges() {
@@ -218,7 +313,6 @@
     setInterval(() => {
       if (location.href !== previousUrl) {
         previousUrl = location.href;
-        render();
         countCurrentShort();
       }
     }, 700);
@@ -228,11 +322,16 @@
     if (document.getElementById("scroll-court-root")) return;
 
     state = await storageGet();
-    root = document.createElement("div");
-    root.id = "scroll-court-root";
-    document.documentElement.appendChild(root);
+
+    panelRoot = document.createElement("div");
+    panelRoot.id = "scroll-court-root";
+    document.documentElement.appendChild(panelRoot);
+
+    document.addEventListener("keydown", blockNavKeys, true);
+    document.addEventListener("wheel", blockWheel, { capture: true, passive: false });
 
     render();
+    renderOverlay();
     countCurrentShort();
     watchUrlChanges();
 
@@ -240,6 +339,7 @@
       if (areaName !== "local" || !changes[STORAGE_KEY]) return;
       state = { ...defaultState, ...changes[STORAGE_KEY].newValue };
       render();
+      renderOverlay();
     });
   }
 

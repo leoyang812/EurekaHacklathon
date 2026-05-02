@@ -1,14 +1,16 @@
 const STORAGE_KEY = "scrollCourtState";
+const DEFAULT_API_BASE = "http://localhost:3000";
+
 const defaultState = {
   enabled: true,
-  unlocked: false,
-  demoPassword: "",
+  apiBase: DEFAULT_API_BASE,
   watchedCount: 0,
   wisdom: 50,
   quizCount: 0,
   lastShortUrl: "",
   lastQuizAt: 0
 };
+
 const ranks = [
   { min: 90, name: "Oracle of Restraint" },
   { min: 70, name: "Stoic Swipe Survivor" },
@@ -43,10 +45,7 @@ function render() {
   document.querySelector("#wisdom").textContent = String(state.wisdom);
   document.querySelector("#rank").textContent = getRank(state.wisdom);
   document.querySelector("#toggle").textContent = state.enabled ? "On" : "Off";
-  document.querySelector("#demo-password").value = state.demoPassword || "";
-  document.querySelector("#status").textContent = state.unlocked
-    ? "Unlocked. AI receipts can be requested through your Next API."
-    : "Locked receipts use fallback judgment until unlocked.";
+  document.querySelector("#api-base").value = state.apiBase || DEFAULT_API_BASE;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -59,8 +58,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.querySelector("#save").addEventListener("click", async () => {
-    const demoPassword = document.querySelector("#demo-password").value.trim();
-    await storageSet({ demoPassword, unlocked: demoPassword.length > 0 });
+    const raw = document.querySelector("#api-base").value.trim();
+    const apiBase = raw || DEFAULT_API_BASE;
+    await storageSet({ apiBase });
+
+    const statusEl = document.querySelector("#status");
+    statusEl.textContent = `Saved: ${apiBase}`;
+    statusEl.className = "status-ok";
     render();
   });
 
@@ -72,6 +76,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       lastShortUrl: "",
       lastQuizAt: 0
     });
+
+    const statusEl = document.querySelector("#status");
+    statusEl.textContent = "Stats reset.";
+    statusEl.className = "";
     render();
   });
 });

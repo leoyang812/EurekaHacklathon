@@ -1,9 +1,11 @@
+/* ─── Panel root ─────────────────────────────────────────── */
+
 #scroll-court-root {
   position: fixed;
   right: 18px;
   top: 86px;
   z-index: 2147483647;
-  width: 320px;
+  width: 300px;
   max-width: calc(100vw - 28px);
   color: #f9fafb;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -13,6 +15,8 @@
   box-sizing: border-box;
 }
 
+/* ─── Side panel ─────────────────────────────────────────── */
+
 .sc-panel {
   overflow: hidden;
   border: 1px solid rgba(245, 158, 11, 0.45);
@@ -20,6 +24,7 @@
   background: rgba(17, 24, 39, 0.94);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.42);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .sc-panel.sc-closed .sc-body {
@@ -49,6 +54,7 @@
 .sc-muted {
   color: #d1d5db;
   font-size: 12px;
+  margin: 0;
 }
 
 .sc-icon-button,
@@ -98,46 +104,19 @@
 .sc-stat strong {
   display: block;
   margin-top: 3px;
-  font-size: 15px;
-}
-
-.sc-quote,
-.sc-receipt,
-.sc-quiz {
-  padding: 11px;
-  border-radius: 6px;
-  background: rgba(245, 158, 11, 0.12);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sc-quote {
+  padding: 11px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.12);
   color: #fde68a;
   font-size: 13px;
   line-height: 1.35;
-}
-
-.sc-quiz {
-  display: grid;
-  gap: 9px;
-  background: rgba(34, 197, 94, 0.1);
-}
-
-.sc-quiz strong {
-  color: #dcfce7;
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.sc-answer {
-  width: 100%;
-  padding: 9px 10px;
-  color: #f9fafb;
-  text-align: left;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.sc-answer:hover,
-.sc-icon-button:hover {
-  background: rgba(255, 255, 255, 0.18);
 }
 
 .sc-actions {
@@ -162,6 +141,9 @@
 .sc-receipt {
   display: none;
   white-space: pre-wrap;
+  padding: 11px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.12);
   color: #fef3c7;
   font-size: 13px;
   line-height: 1.42;
@@ -171,10 +153,112 @@
   display: block;
 }
 
+.sc-icon-button:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ─── Blocking quiz overlay ──────────────────────────────── */
+
+#sc-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.84);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  animation: sc-fade-in 0.18s ease;
+}
+
+@keyframes sc-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.sc-modal {
+  max-width: 440px;
+  width: calc(100% - 32px);
+  padding: 28px 24px;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  border-radius: 14px;
+  background: rgba(17, 24, 39, 0.97);
+  display: grid;
+  gap: 16px;
+  text-align: center;
+  color: #f9fafb;
+  box-sizing: border-box;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
+  animation: sc-slide-up 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes sc-slide-up {
+  from { transform: translateY(18px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.sc-modal-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #fbbf24;
+  text-transform: uppercase;
+}
+
+.sc-modal-quote {
+  margin: 0;
+  color: #fde68a;
+  font-size: 15px;
+  line-height: 1.55;
+  font-style: italic;
+}
+
+.sc-modal-question {
+  color: #dcfce7;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.sc-modal-answers {
+  display: grid;
+  gap: 8px;
+}
+
+.sc-modal-answer {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #f9fafb;
+  background: rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  transition: background 0.12s, border-color 0.12s;
+  box-sizing: border-box;
+}
+
+.sc-modal-answer:hover {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.sc-modal-stats {
+  margin: 0;
+  color: #6b7280;
+  font-size: 11px;
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+
 @media (max-width: 720px) {
   #scroll-court-root {
     right: 10px;
     top: 72px;
-    width: 300px;
+    width: 280px;
   }
 }

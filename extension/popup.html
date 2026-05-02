@@ -55,6 +55,9 @@
         display: block;
         margin-top: 3px;
         font-size: 15px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       label {
@@ -72,6 +75,9 @@
         border-radius: 6px;
         color: #f9fafb;
         background: rgba(255, 255, 255, 0.08);
+        box-sizing: border-box;
+        font: inherit;
+        font-size: 12px;
       }
 
       button {
@@ -108,13 +114,22 @@
         border-radius: 6px;
         background: rgba(255, 255, 255, 0.06);
       }
+
+      .divider {
+        border: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        margin: 0;
+      }
+
+      .status-ok { color: #4ade80; }
+      .status-err { color: #f87171; }
     </style>
   </head>
   <body>
     <main>
       <header>
         <h1>Scroll Court</h1>
-        <p>Ancient philosophers are watching the watch history.</p>
+        <p>Ancient philosophers are watching your watch history.</p>
       </header>
 
       <section class="stats" aria-label="Scroll Court stats">
@@ -123,21 +138,24 @@
         <div class="stat"><span>Rank</span><strong id="rank">Doomscroll Defendant</strong></div>
       </section>
 
+      <hr class="divider" />
+
       <section class="toggle">
-        <span>Panel enabled</span>
+        <span>Interruptions</span>
         <button class="secondary" id="toggle" type="button">On</button>
       </section>
 
       <label>
-        Demo access code
-        <input id="demo-password" type="password" autocomplete="off" placeholder="Matches DEMO_PASSWORD" />
+        API server URL
+        <input id="api-base" type="url" autocomplete="off" placeholder="http://localhost:3000" />
       </label>
 
       <div class="row">
-        <button class="primary" id="save" type="button">Unlock</button>
-        <button class="secondary" id="reset" type="button">Reset</button>
+        <button class="primary" id="save" type="button">Save URL</button>
+        <button class="secondary" id="reset" type="button">Reset Stats</button>
       </div>
-      <p id="status">Locked receipts use fallback judgment until unlocked.</p>
+
+      <p id="status"></p>
     </main>
     <script src="popup.js"></script>
   </body>
