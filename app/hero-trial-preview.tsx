@@ -28,11 +28,11 @@ const storageKey = "scrollCourtLandingProfile";
 const reportsStorageKey = "scrollCourtLandingReports";
 
 const ranks = [
-  { name: "Doomscroll Defendant", minCorrectAnswers: 0 },
-  { name: "Apprentice Witness", minCorrectAnswers: 5 },
-  { name: "Stoic Swipe Survivor", minCorrectAnswers: 20 },
-  { name: "Oracle of Restraint", minCorrectAnswers: 50 },
-  { name: "Supreme Court of Focus", minCorrectAnswers: 100 }
+  { name: "Tung Tung Trogolodyte", minCorrectAnswers: 0 },
+  { name: "Doomscrolling Defendant", minCorrectAnswers: 5 },
+  { name: "Sapient Scroller", minCorrectAnswers: 20 },
+  { name: "Locked-in Lawyer", minCorrectAnswers: 50 },
+  { name: "Flow State", minCorrectAnswers: 100 }
 ];
 
 function getRank(correctAnswers: number) {
@@ -119,7 +119,7 @@ export function HeroTrialPreview() {
         <div className="rounded-lg border border-amber-300/25 bg-amber-300/10 p-4">
           <p className="text-xs font-bold uppercase text-amber-300">The judge whispers</p>
           <p className="mt-2 text-sm leading-6 text-amber-100">
-            {rank === "Doomscroll Defendant"
+            {rank === "Tung Tung Trogolodyte"
               ? "The record is still under investigation."
               : `${rank} is now entered into the court record.`}
           </p>
