@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   Sparkles
 } from "lucide-react";
+import { HeroTrialPreview } from "./hero-trial-preview";
 import { ProfileStatsPanel } from "./profile-stats";
 
 const steps = [
@@ -80,45 +81,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-amber-100/20 bg-[#11100d]/85 shadow-2xl shadow-black/50 backdrop-blur">
-            <div className="flex items-center justify-between border-b border-amber-100/15 px-4 py-3">
-              <div>
-                <p className="text-sm font-bold text-amber-100">Trial Record</p>
-                <p className="text-xs text-stone-400">Session evidence</p>
-              </div>
-              <img
-                alt=""
-                className="h-10 w-10 rounded-full border border-amber-200/25 object-cover"
-                src="/logo.png"
-              />
-            </div>
-            <div className="grid gap-4 p-4">
-              <div className="rounded-lg border border-amber-200/25 bg-black/45 p-4 text-center">
-                <p className="text-xs font-bold uppercase text-amber-100">Recall Score</p>
-                <p className="mt-1 text-5xl font-black text-white">78</p>
-                <p className="mt-1 text-sm font-bold text-stone-300">Cautiously hopeful</p>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  ["Session", "12"],
-                  ["Lifetime", "186"],
-                  ["Trials", "42"],
-                  ["Rank", "Stoic"]
-                ].map(([label, value]) => (
-                  <div className="rounded-lg border border-amber-100/15 bg-white/[0.04] p-3" key={label}>
-                    <p className="text-xs text-stone-400">{label}</p>
-                    <p className="mt-1 text-sm font-black text-white">{value}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="rounded-lg border border-amber-300/25 bg-amber-300/10 p-4">
-                <p className="text-xs font-bold uppercase text-amber-300">The judge whispers</p>
-                <p className="mt-2 text-sm leading-6 text-amber-100">
-                  Socrates approves one moment of focus. The record is still under investigation.
-                </p>
-              </div>
-            </div>
-          </div>
+          <HeroTrialPreview />
         </div>
       </section>
 

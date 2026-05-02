@@ -229,7 +229,8 @@ Evidence rules:
 - Frame summaries are primary when they describe visible action or hard-coded on-screen subtitles/text from the video itself.
 - YouTube captions are useful only when they clearly match speech/content in the Short. If captions look like song lyrics, background music, ambience, or unrelated audio, do not base the quiz on them.
 - Metadata/title/channel are weakest and should only support general topic framing. Do not quiz mainly from the title when frameSummary or meaningful captions exist.
-- Never invent details that are not in the evidence.
+- You may use outside information related to the evidence if the topic can be clearly determined (e.g. there are clear keywords).
+- However, questions must be answerable based on evidence from the Short.
 
 Question rules:
 - Questions MUST capture the topic or main idea of the Short.

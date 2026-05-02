@@ -9,13 +9,6 @@
   const MIN_WATCH_DWELL_MS = 3000;
   const JUDGMENT_MIN_SHORTS = 4;
   const JUDGMENT_MAX_SHORTS = 5;
-  const JUMPSCARE_SOUND = "assets/sound/lordsonny-cinematic-hit-159487.mp3";
-  const JUMPSCARE_DURATION_MS = 2000;
-  const JUMPSCARE_IMAGES = [
-    "assets/Images/socrates-jumpscare.png",
-    "assets/Images/socrates-jumpscare2.png",
-    "assets/Images/socrates-jumpscare3.png"
-  ];
 
   const COURT_QUOTES = [
     { philosopher: "Socrates", text: '"If scrolling is your power, then what are you without it?" - Socrates' },
@@ -120,7 +113,8 @@
         default: "assets/Images/socrates1.jpg",
         intense: "assets/Images/socrates2.jpg",
         harsh: "assets/Images/socrates3.jpg"
-      }
+      },
+      aceAsset: "assets/AceAttorney/Socratesaceattoeny.png"
     },
     {
       name: "Plato",
@@ -129,7 +123,8 @@
         default: "assets/Images/plato1.jpg",
         intense: "assets/Images/plato2.png",
         harsh: "assets/Images/plato2.png"
-      }
+      },
+      aceAsset: "assets/AceAttorney/Platoace.png"
     },
     {
       name: "Diogenes",
@@ -138,7 +133,8 @@
         default: "assets/Images/diogenes1.jpg",
         intense: "assets/Images/diogenes2.jpg",
         harsh: "assets/Images/diogenes2.jpg"
-      }
+      },
+      aceAsset: "assets/AceAttorney/Diogenes.png"
     },
     {
       name: "Aristotle",
@@ -147,7 +143,8 @@
         default: "assets/Images/aristotle1.jpg",
         intense: "assets/Images/aristotle2.jpg",
         harsh: "assets/Images/aristotle2.jpg"
-      }
+      },
+      aceAsset: "assets/AceAttorney/Aristotle.png"
     },
     {
       name: "Marcus Aurelius",
@@ -156,7 +153,8 @@
         default: "assets/Images/marcus1.jpg",
         intense: "assets/Images/marcus2.jpg",
         harsh: "assets/Images/marcus2.jpg"
-      }
+      },
+      aceAsset: "assets/AceAttorney/MarcusAce.png"
     },
     {
       name: "Sun Tzu",
@@ -165,7 +163,8 @@
         default: "assets/Images/suntzu1.jpg",
         intense: "assets/Images/suntzu2.jpg",
         harsh: "assets/Images/suntzu2.jpg"
-      }
+      },
+      aceAsset: "assets/AceAttorney/SunTzu.png"
     }
   ];
   const TOPIC_KEYWORDS = {
@@ -318,6 +317,15 @@
     return PHILOSOPHERS.find((item) => item.name === name);
   }
 
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function getDefaultPhilosopherAsset(name) {
     return getPhilosopherForName(name)?.assets?.default || "";
   }
@@ -377,6 +385,27 @@
     return `<img class="sc-brand-logo ${extraClass}" src="${chrome.runtime.getURL("assets/Images/Logo.png")}" alt="The Recall Trial" />`;
   }
 
+  function getAceAttorneyMarkup(philosopher, quote) {
+    const asset = philosopher?.aceAsset || philosopher?.assets?.default || "";
+    const img = asset
+      ? `<img class="sc-aa-character" src="${chrome.runtime.getURL(asset)}" alt="${escapeHtml(philosopher.name)}" />`
+      : "";
+    const name = escapeHtml(philosopher?.name || "The Judge");
+    return `
+      <div class="sc-aa-stage">
+        <div class="sc-aa-nameplate">${name.toUpperCase()}</div>
+        <div class="sc-aa-scene">
+          ${img}
+        </div>
+        <div class="sc-aa-dialogue">
+          <span>${name}</span>
+          <p>${escapeHtml(quote)}</p>
+          <i aria-hidden="true"></i>
+        </div>
+      </div>
+    `;
+  }
+
   function hideBrokenPhilosopherImage(root = document) {
     root.querySelector(".sc-philosopher-img")?.addEventListener("error", (event) => {
       event.currentTarget.style.display = "none";
@@ -384,34 +413,9 @@
     root.querySelector(".sc-brand-logo")?.addEventListener("error", (event) => {
       event.currentTarget.style.display = "none";
     });
-  }
-
-  function triggerJumpscare() {
-    document.getElementById("sc-jumpscare")?.remove();
-
-    const imagePath = JUMPSCARE_IMAGES[Math.floor(Math.random() * JUMPSCARE_IMAGES.length)];
-    const scare = document.createElement("div");
-    scare.id = "sc-jumpscare";
-    scare.setAttribute("aria-hidden", "true");
-    scare.innerHTML = `
-      <img class="sc-jumpscare-img" src="${chrome.runtime.getURL(imagePath)}" alt="" />
-      <div class="sc-jumpscare-flash"></div>
-    `;
-    document.documentElement.appendChild(scare);
-
-    const audio = new Audio(chrome.runtime.getURL(JUMPSCARE_SOUND));
-    audio.volume = 0.82;
-    audio.play().catch(() => {
-      // Some browser autoplay policies still block extension audio.
+    root.querySelector(".sc-aa-character")?.addEventListener("error", (event) => {
+      event.currentTarget.style.display = "none";
     });
-
-    setTimeout(() => {
-      scare.classList.add("sc-jumpscare-out");
-    }, JUMPSCARE_DURATION_MS - 260);
-
-    setTimeout(() => {
-      scare.remove();
-    }, JUMPSCARE_DURATION_MS);
   }
 
   function getTopicsFromText(text) {
@@ -963,12 +967,6 @@
         await scheduleNextJudgment();
         showTemporaryJudgePanel(Number.POSITIVE_INFINITY);
 
-        if (!answer.correct && nextWrongStreak > 0 && nextWrongStreak % 3 === 0) {
-          setTimeout(() => {
-            triggerJumpscare();
-          }, 120);
-        }
-
         setTimeout(() => {
           overlay.remove();
           unlockScroll();
@@ -1157,27 +1155,8 @@
 
     panelRoot.innerHTML = `
       <div class="sc-court-shell ${state.enabled ? "" : "sc-closed"}">
-        ${hasJudgeFeedback ? `<section class="sc-panel sc-panel-left ${shouldPopJudgePanel ? "sc-panel-pop" : ""}" aria-label="The Recall Trial judge">
-          <header class="sc-header">
-            <div class="sc-header-mark">
-              ${getLogoMarkup()}
-              <div class="sc-title">
-                <strong>The Recall Trial</strong>
-                <span>${state.enabled ? "Trial is in session" : "Trial dismissed"}</span>
-              </div>
-            </div>
-            <button class="sc-icon-button" id="sc-toggle" type="button" title="${state.enabled ? "Collapse panels" : "Open panels"}">${state.enabled ? "-" : "+"}</button>
-          </header>
-          <div class="sc-body">
-            <div class="sc-judge-stage">
-              ${getPhilosopherMarkup(state.lastPhilosopher, state.lastPhilosopherAsset, "sc-philosopher-judge")}
-              <strong class="sc-philosopher-name">${judgeName}</strong>
-            </div>
-            <div class="sc-quote">
-              <span>${judgeName} says</span>
-              <p>${quote}</p>
-            </div>
-          </div>
+        ${hasJudgeFeedback ? `<section class="sc-panel sc-panel-left sc-aa-panel ${shouldPopJudgePanel ? "sc-panel-pop" : ""}" aria-label="The Recall Trial judge">
+          ${getAceAttorneyMarkup(judge, quote)}
         </section>` : ""}
 
         <aside class="sc-panel sc-panel-right ${state.caseFileOpen === false ? "sc-case-file-closed" : ""}" aria-label="The Recall Trial case file">
@@ -1269,28 +1248,12 @@
     const receipt = panelRoot?.querySelector("#sc-receipt");
     if (!receipt) return;
     receipt.classList.add("sc-visible");
-    receipt.textContent = "Session ended. The philosophers are writing your receipt...";
+    receipt.textContent = "Session ended. Opening your report...";
 
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: "SCROLL_COURT_GENERATE_RECEIPT",
-        payload: {
-          demoPassword: state.demoPassword,
-          watchedCount: state.watchedCount,
-          wisdom: state.wisdom,
-          courtMood: getCourtMood(state.wisdom),
-          quizCount: state.quizCount,
-          recentEvidence: state.recentEvidence || [],
-          sessionTopics: state.sessionTopics || [],
-          roastIntensity: state.roastIntensity || "medium"
-        }
-      });
-
-      receipt.textContent = response?.status === 401
-        ? "Enter the demo password in the extension popup to unlock the court."
-        : response?.data?.receipt || fallbackReceipt();
+      await chrome.runtime.sendMessage({ type: "SCROLL_COURT_END_SESSION" });
     } catch {
-      receipt.textContent = fallbackReceipt();
+      receipt.textContent = "Could not open the report automatically. Close this Shorts tab to generate it.";
     }
   }
 
